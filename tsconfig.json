@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"verbatimModuleSyntax": true,
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"types": ["svelte"],
+		"isolatedModules": true
+	},
+	"include": ["env.d.ts", "src/**/*.ts", "src/**/*.svelte", "sdk/**/*.ts", "sdk/**/*.d.ts"]
+}

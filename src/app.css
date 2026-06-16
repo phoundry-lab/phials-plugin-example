@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "phoundry-ui/styles/theme.css";
+@import "phoundry-ui/styles/tokens.css";
+@import "phoundry-ui/styles/components.css";
+@import "phoundry-ui/styles/utils.css";
