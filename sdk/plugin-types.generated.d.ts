@@ -653,10 +653,10 @@ interface FileBrowserViewProvider {
 	defaultItemSizePreset?: ViewItemSizePreset;
 
 	/**
-	 * Optional view status bar menu items (phoundry-ui context menu rows).
+	 * Optional inline view configuration items (phoundry-ui menu row contract).
 	 * `api` is scoped to the plugin that registered this view.
 	 */
-	getStatusBarMenuItems?: (
+	getConfigurationItems?: (
 		pane: PluginPaneContext,
 		api: ViewAPI,
 	) => import("phoundry-ui").MenuItem[];
@@ -1199,7 +1199,7 @@ interface PluginAPI {
 }
 
 /**
- * API passed to view status bar control factories (scoped to the view's owning plugin).
+ * API passed to view configuration item factories (scoped to the view's owning plugin).
  * Same runtime object as {@link PluginAPI} for that plugin; reserved for future view helpers.
  */
 interface ViewAPI extends PluginAPI {}
