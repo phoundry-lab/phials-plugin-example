@@ -29,6 +29,8 @@ export default function createPlugin(): PhialsPlugin {
 		name: "Example phoundry-ui preview",
 		canHandle: (file) => file.name.endsWith(".phials-demo-preview.txt"),
 		thumbnail: ExamplePreview,
+		surface: ExamplePreview,
+		// Deprecated compatibility field for older Phials releases.
 		preview: ExamplePreview,
 	};
 

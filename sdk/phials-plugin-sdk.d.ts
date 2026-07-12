@@ -1,4 +1,4 @@
-// @generated from phials — do not edit
+// @generated from phials - do not edit
 // Synced by phials/scripts/sync-plugin-sdk.mjs
 
 /// <reference path="./pane-context.stub.d.ts" />

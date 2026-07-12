@@ -1,4 +1,4 @@
-// @generated from phials — do not edit
+// @generated from phials - do not edit
 // Synced by phials/scripts/sync-plugin-sdk.mjs
 
 /**
@@ -54,6 +54,11 @@ interface FileEntry {
 	isChildVial?: boolean;
 	/** Listed directory is under a recursive vial (metadata from ancestor root) */
 	isInRecursiveVial?: boolean;
+	/** Listing node is a symlink or Windows directory junction */
+	is_symlink?: boolean;
+	/** Resolved absolute target when healthy; stored link text when broken */
+	symlink_target?: string | null;
+	symlink_broken?: boolean;
 	size: number;
 	created?: number | null;
 	modified?: number | null;
@@ -227,7 +232,7 @@ interface FilterSubGroupNode {
 /** Discriminated node in a filter tree */
 type FilterNode = FilterConditionNode | FilterSubGroupNode;
 
-/** Root filter group id sentinel — `null` means the root group in tree APIs */
+/** Root filter group id sentinel - `null` means the root group in tree APIs */
 type FilterGroupId = string | null;
 
 /**

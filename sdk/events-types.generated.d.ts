@@ -1,4 +1,4 @@
-// @generated from phials — do not edit
+// @generated from phials - do not edit
 // Synced by phials/scripts/sync-plugin-sdk.mjs
 
 /**
@@ -39,6 +39,7 @@ interface ColumnLayoutChangedPayload {
 	savedViewsCount: number;
 	activeSavedViewId: string | null;
 	columnConfig: DetailsViewColumnConfig[];
+	calculationRowVisible: boolean;
 	sourcePaneId: string;
 }
 
@@ -70,6 +71,17 @@ interface CoreEvents {
 	"core.file.deleted": { paths: string[] };
 	/** File saved */
 	"core.file.saved": { path: string };
+	/** Persisted File Note content was created, updated, or removed */
+	"core.file-note.saved": {
+		path: string;
+		vialPath: string;
+		hasNote: boolean;
+	};
+	/** Portable Page visibility/order changed for one Vial. */
+	"core.vial-page-config.changed": {
+		vialPath: string;
+		page: VialPageConfig;
+	};
 	/** File opened */
 	"core.file.opened": { path: string };
 	/** File created */

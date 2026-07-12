@@ -1,4 +1,4 @@
-// @generated from phials — do not edit
+// @generated from phials - do not edit
 // Synced by phials/scripts/sync-plugin-sdk.mjs
 
 /// <reference path="./pane-context.stub.d.ts" />
@@ -101,6 +101,7 @@ type CommandPlacementArea =
 	| "toolbar"
 	| "headerBar"
 	| "contextMenu"
+	/** @deprecated No UI surface - use `contextMenu` with `selectionMode: "multi"` instead. */
 	| "selectionBar";
 
 /**
@@ -127,6 +128,8 @@ interface ToolbarPlacementConfig extends CommandPlacementBase {
 	showArrow?: boolean;
 	/** Toggle/active state indicator */
 	active?: (ctx: CommandContext) => boolean;
+	/** Optional activity badge count on the path bar button */
+	badgeCount?: (ctx: CommandContext) => number;
 	/** Group ID for ButtonGroup */
 	group?: string;
 	/** Optional sub-toolbar component shown when button is toggled */
@@ -165,6 +168,8 @@ interface ContextMenuPlacementConfig extends CommandPlacementBase {
 
 /**
  * Selection bar placement configuration (multi-select toolbar).
+ * @deprecated The selection toolbar was removed. Placements are silently ignored.
+ * Use `contextMenu` with `selectionMode: "multi"` instead.
  */
 interface SelectionBarPlacementConfig extends CommandPlacementBase {
 	area: "selectionBar";
@@ -271,6 +276,9 @@ interface Command {
 
 	/** Alternative search terms for command bar fuzzy search */
 	searchAliases?: string[];
+
+	/** Optional group for path bar dropdown separators between sibling child commands */
+	menuGroup?: string;
 
 	// ─── Child Commands ───────────────────────────────────────────────────────
 
