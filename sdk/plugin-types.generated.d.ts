@@ -800,10 +800,10 @@ interface ModuleProviderProps {
 }
 
 /**
- * Module provider - provides a UI module that can be placed in any panel
+ * Module provider - provides a UI module for panels and center tab groups
  *
  * Modules are self-contained UI components like Navigator, File Preview,
- * or Terminal that can be arranged in tabs or splits within panels.
+ * or Terminal that can be arranged in panel tabs or modular center groups.
  */
 interface ModuleProvider {
 	type: "module";
@@ -843,6 +843,18 @@ interface ModuleProvider {
 
 	/** Dynamic tab icon when rendered in center (falls back to `icon`) */
 	getTabIcon?: (state?: unknown) => string;
+
+	/** Stable content identity used to focus an equivalent center tab before creating one. */
+	getCenterTabIdentity?: (state?: unknown) => string | undefined;
+
+	/** Opt in to same-type replacement of an active, unpinned center tab. */
+	canReplaceCenterTab?: (
+		currentState: unknown,
+		requestedState: unknown,
+	) => boolean;
+
+	/** Finalize or refuse unresolved state before close or center-tab replacement. */
+	finalizeCenterTab?: (moduleInstance: ModuleInstance) => Promise<boolean>;
 
 	/** Optional panel module tab bar menu items (phoundry-ui context menu rows). */
 	getTabBarMenuItems?: (
