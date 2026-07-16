@@ -154,12 +154,7 @@ interface PreviewSurfaceProps {
 interface PreviewToolbarContributionProps {
 	file: FileEntry;
 	session?: PreviewSession;
-}
-
-interface PreviewToolbarContributions {
-	start?: import("svelte").Component<PreviewToolbarContributionProps>;
-	center?: import("svelte").Component<PreviewToolbarContributionProps>;
-	end?: import("svelte").Component<PreviewToolbarContributionProps>;
+	destination: PreviewDestination;
 }
 
 interface PreviewDestinationCapabilities {
@@ -263,7 +258,8 @@ interface PreviewProvider {
 	createSession?: (
 		props: PreviewSessionFactoryProps,
 	) => PreviewSession | Promise<PreviewSession>;
-	toolbar?: PreviewToolbarContributions;
+	/** Single reactive provider control group mounted at the host toolbar's trailing edge. */
+	toolbar?: import("svelte").Component<PreviewToolbarContributionProps>;
 	destinations?: PreviewDestinationCapabilities;
 	/** @deprecated One-cycle compatibility component; use `surface`. */
 	preview?: import("svelte").Component<PreviewProviderProps>;
