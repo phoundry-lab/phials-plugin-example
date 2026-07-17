@@ -30,6 +30,7 @@ export default function createPlugin(): PhialsPlugin {
 		canHandle: (file) => file.name.endsWith(".phials-demo-preview.txt"),
 		thumbnail: ExamplePreview,
 		surface: ExamplePreview,
+		destinations: { pageTab: true },
 	};
 
 	return {

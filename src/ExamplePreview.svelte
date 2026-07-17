@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from "phoundry-ui";
 
-	let { file }: PreviewProviderProps = $props();
+	let { file }: PreviewSurfaceProps = $props();
 </script>
 
 <div class="demo-wrap">

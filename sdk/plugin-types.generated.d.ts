@@ -119,14 +119,7 @@ type ProviderType =
 
 // ─── Preview Provider ────────────────────────────────────────────────────────
 
-/**
- * Props passed to preview components
- */
-interface PreviewProviderProps {
-	file: FileEntry;
-}
-
-type PreviewDestination = "module" | "tab" | "gallery" | "page";
+type PreviewDestination = "module" | "gallery" | "page";
 
 /** Provider-owned state shared by every presentation of one file preview. */
 interface PreviewSession {
@@ -158,7 +151,8 @@ interface PreviewToolbarContributionProps {
 }
 
 interface PreviewDestinationCapabilities {
-	previewTab?: boolean;
+	/** Surface may populate File mode in the universal Page tab. */
+	pageTab?: boolean;
 }
 
 /** Where the host mounted the thumbnail component. */
@@ -182,7 +176,7 @@ interface ThumbnailProviderProps {
 }
 
 /**
- * Preview toolbar surface - sidebar embed vs preview tab / gallery fullscreen stage.
+ * Preview toolbar surface - sidebar embed vs PageTab / gallery fullscreen stage.
  */
 type PreviewToolbarSurface = "sidebar" | "fullscreen";
 
@@ -226,17 +220,6 @@ interface PreviewToolbarEditorState {
 }
 
 /**
- * Props passed to fullscreen components
- */
-interface FullscreenProviderProps {
-	file: FileEntry;
-	onclose?: () => void;
-	/** One-shot request to focus an editable preview surface after load. */
-	focusEditor?: boolean;
-	onConsumeFocusEditor?: () => void;
-}
-
-/**
  * Preview provider - renders file previews, thumbnails, and fullscreen views
  */
 interface PreviewProvider {
@@ -261,11 +244,6 @@ interface PreviewProvider {
 	/** Single reactive provider control group mounted at the host toolbar's trailing edge. */
 	toolbar?: import("svelte").Component<PreviewToolbarContributionProps>;
 	destinations?: PreviewDestinationCapabilities;
-	/** @deprecated One-cycle compatibility component; use `surface`. */
-	preview?: import("svelte").Component<PreviewProviderProps>;
-	/** @deprecated One-cycle compatibility component; use `surface`. */
-	fullscreen?: import("svelte").Component<FullscreenProviderProps>;
-
 	/** Allow a leading thumbnail in non-compact Details rows. */
 	detailsViewThumbnail?: boolean;
 
