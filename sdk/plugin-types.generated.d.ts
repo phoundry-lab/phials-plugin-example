@@ -119,7 +119,7 @@ type ProviderType =
 
 // ─── Preview Provider ────────────────────────────────────────────────────────
 
-type PreviewDestination = "module" | "gallery" | "page";
+type PreviewDestination = "module" | "gallery" | "page" | "embed";
 
 /** Provider-owned state shared by every presentation of one file preview. */
 interface PreviewSession {
@@ -139,6 +139,8 @@ interface PreviewSessionFactoryProps {
 interface PreviewSurfaceProps {
 	file: FileEntry;
 	session?: PreviewSession;
+	/** Host destination; `embed` requires inspection-only behavior. */
+	destination?: PreviewDestination;
 	/** One-shot focus request; does not describe the host destination. */
 	focusEditor?: boolean;
 	onConsumeFocusEditor?: () => void;
@@ -153,6 +155,8 @@ interface PreviewToolbarContributionProps {
 interface PreviewDestinationCapabilities {
 	/** Surface may populate File mode in the universal Page tab. */
 	pageTab?: boolean;
+	/** Surface is safe to mount inspection-only inside Markdown. */
+	embed?: boolean;
 }
 
 /** Where the host mounted the thumbnail component. */

@@ -82,6 +82,8 @@ interface CoreEvents {
 		vialPath: string;
 		page: VialPageConfig;
 	};
+	/** Property values or derived-property configuration changed in one Vial. */
+	"core.vial-values.changed": { vialPath: string };
 	/** File opened */
 	"core.file.opened": { path: string };
 	/** File created */
