@@ -112,7 +112,7 @@ export interface CommunityPluginEntry {
 /**
  * Community plugins index structure
  */
-export interface CommunityPluginsIndex {
+interface CommunityPluginsIndex {
 	plugins: CommunityPluginEntry[];
 }
 

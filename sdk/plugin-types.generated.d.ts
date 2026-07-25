@@ -8,7 +8,7 @@
  *
  * Defines interfaces for the plugin architecture including:
  * - Plugin container and registration
- * - All provider types (Preview, Context, Metadata, Toolbar, View, Theme, Module, Command)
+ * - All provider types (Preview, Metadata, View, Module, Command)
  * - Scoped API interfaces
  * - Settings schema types
  */
@@ -96,11 +96,8 @@ interface PluginSvelteRuntime {
  */
 type PluginProvider =
 	| PreviewProvider
-	| ContextProvider
 	| MetadataProvider
-	| ToolbarButtonProvider
 	| FileBrowserViewProvider
-	| SelectionProvider
 	| ModuleProvider
 	| CommandProvider;
 
@@ -109,11 +106,8 @@ type PluginProvider =
  */
 type ProviderType =
 	| "preview"
-	| "context"
 	| "metadata"
-	| "toolbar"
 	| "view"
-	| "selection"
 	| "module"
 	| "command";
 
@@ -159,12 +153,6 @@ interface PreviewDestinationCapabilities {
 	embed?: boolean;
 }
 
-/** Where the host mounted the thumbnail component. */
-type ThumbnailSurface = "grid" | "details";
-
-/** Load lifecycle reported to the host (details view uses this for icon fallback). */
-type ThumbnailLoadState = "loading" | "loaded" | "failed";
-
 /**
  * Props passed to thumbnail components
  */
@@ -173,10 +161,6 @@ interface ThumbnailProviderProps {
 	size: number;
 	generatedSize?: number;
 	quality?: number;
-	/** Host surface; grid-only chrome should hide when `"details"`. */
-	surface?: ThumbnailSurface;
-	/** Optional load-state callback for host-driven fallback (e.g. details leading column). */
-	onLoadStateChange?: (state: ThumbnailLoadState) => void;
 }
 
 /**
@@ -248,8 +232,6 @@ interface PreviewProvider {
 	/** Single reactive provider control group mounted at the host toolbar's trailing edge. */
 	toolbar?: import("svelte").Component<PreviewToolbarContributionProps>;
 	destinations?: PreviewDestinationCapabilities;
-	/** Allow a leading thumbnail in non-compact Details rows. */
-	detailsViewThumbnail?: boolean;
 
 	/** Behavior */
 	overridesDoubleClick?: boolean;
@@ -257,11 +239,11 @@ interface PreviewProvider {
 	isEditable?: (file: FileEntry, metadata?: FileMetadata) => boolean;
 }
 
-// ─── Context Provider ────────────────────────────────────────────────────────
+// ─── Item Shortcuts ──────────────────────────────────────────────────────────
 
 /**
- * Shortcut configuration for context menu items.
- * When defined, the shortcut is auto-registered with ShortcutManager.
+ * Shortcut configuration for module providers and other item-level shortcuts.
+ * When defined on a module, the shortcut is auto-registered with ShortcutManager.
  */
 interface ItemShortcutConfig {
 	/** Default shortcuts (up to 3). Use ShortcutDefinition format. */
@@ -272,104 +254,6 @@ interface ItemShortcutConfig {
 	allowDefault?: boolean;
 	/** Priority for conflict resolution (higher = checked first) */
 	priority?: number;
-}
-
-/**
- * Context passed to context menu item callbacks.
- * Provides access to the current file(s) and pane.
- */
-interface ContextItemContext {
-	/** The primary file entry (for single mode, the right-clicked file; for multi, the first selected) */
-	entry: FileEntry;
-	/** All selected file entries (for multi mode; for single mode, just [entry]) */
-	entries: FileEntry[];
-	/** The pane context */
-	pane: PluginPaneContext;
-}
-
-/**
- * A single menu item contributed by a context provider.
- * Items are defined statically on the provider and filtered at runtime using canHandle.
- */
-interface ContextProviderItem {
-	/** Unique item ID within this provider */
-	id: string;
-	/** Display label in the menu */
-	label: string;
-	/** Icon to display */
-	icon?: string;
-	/** Mark as dangerous action (shows in red) */
-	danger?: boolean;
-	/** Custom render snippet instead of standard menu item */
-	render?: import("svelte").Snippet;
-
-	/**
-	 * Per-item visibility check.
-	 * Used for both menu filtering and shortcut 'when' condition.
-	 * If omitted, item is always visible (when provider matches).
-	 */
-	canHandle?: (ctx: ContextItemContext) => boolean;
-
-	/**
-	 * Whether the item is disabled.
-	 * Can be a boolean or a function that receives the context.
-	 */
-	disabled?: boolean | ((ctx: ContextItemContext) => boolean);
-
-	/**
-	 * Shortcut configuration.
-	 * When defined, auto-registers with ShortcutManager using ID: `{pluginId}.{itemId}`.
-	 */
-	shortcut?: ItemShortcutConfig;
-
-	/**
-	 * Action to execute when the item is clicked or shortcut is triggered.
-	 * Receives the context with current entry/entries and pane.
-	 */
-	action?: (ctx: ContextItemContext) => void | Promise<void>;
-}
-
-/**
- * Category definition for grouping items into submenus
- */
-interface ContextProviderCategory {
-	id: string;
-	label: string;
-	icon?: string;
-}
-
-/**
- * Context provider - contributes items to the right-click context menu.
- *
- * Items are defined statically in the `items` array and filtered at runtime
- * using the provider's `canHandle` and each item's `canHandle`.
- */
-interface ContextProvider {
-	type: "context";
-	id: string;
-	name: string;
-	priority?: number;
-
-	/** Selection mode: 'single' (default) or 'multi' */
-	selectionMode?: "single" | "multi";
-
-	/** Optional file-type filtering at provider level */
-	extensions?: string[];
-	mimeTypes?: string[];
-	categories?: FileCategory[];
-
-	/**
-	 * Provider-level visibility check.
-	 * For single mode: receives the right-clicked entry.
-	 * For multi mode: receives all selected entries.
-	 */
-	canHandle?: (ctx: ContextItemContext) => boolean;
-
-	/** Submenu category (null = root level) */
-	category?: ContextProviderCategory | null;
-
-	/** Static array of menu items provided by this provider */
-	items: ContextProviderItem[];
 }
 
 // ─── Metadata Provider ───────────────────────────────────────────────────────
@@ -537,68 +421,7 @@ interface DirectoryMetadataProfile {
 	providers: MetadataProviderDirectoryStats[];
 }
 
-// ─── Toolbar Button Provider ─────────────────────────────────────────────────
-
-/**
- * Toolbar button definition
- */
-interface ToolbarButtonDefinition {
-	id: string;
-	label: string;
-	icon?: string | ((ctx: ToolbarContext) => string);
-	/** Shortcut configuration for this button */
-	shortcut?: ItemShortcutConfig;
-	action: (ctx: ToolbarContext) => void | Promise<void>;
-	disabled?: (ctx: ToolbarContext) => boolean;
-	hidden?: (ctx: ToolbarContext) => boolean;
-	active?: (ctx: ToolbarContext) => boolean;
-	/** If true, cannot be removed in edit mode */
-	fixed?: boolean;
-	/** Higher priority items stay visible longer when collapsing (default 0) */
-	priority?: number;
-}
-
-/**
- * Toolbar button group definition
- */
-interface ToolbarButtonGroupDefinition {
-	id: string;
-	label: string;
-	icon?: string;
-	buttons: ToolbarButtonDefinition[];
-	dropdownLabel?: string;
-	/** Higher priority items stay visible longer when collapsing (default 0) */
-	priority?: number;
-}
-
-/**
- * Item in a toolbar dropdown menu
- */
-interface ToolbarDropdownItem {
-	id: string;
-	label: string;
-	icon?: string;
-	shortcut?: ItemShortcutConfig;
-	action: (ctx: ToolbarContext) => void | Promise<void>;
-	disabled?: (ctx: ToolbarContext) => boolean;
-	danger?: boolean;
-}
-
-/**
- * Toolbar button that opens a dropdown menu
- */
-interface ToolbarButtonDropdownDefinition {
-	id: string;
-	label: string;
-	icon?: string | ((ctx: ToolbarContext) => string);
-	dropdownItems: ToolbarDropdownItem[];
-	disabled?: (ctx: ToolbarContext) => boolean;
-	hidden?: (ctx: ToolbarContext) => boolean;
-	/** If true, cannot be removed in edit mode */
-	fixed?: boolean;
-	/** Higher priority items stay visible longer when collapsing (default 0) */
-	priority?: number;
-}
+// ─── Toolbar Context (Command Path Bar) ─────────────────────────────────────
 
 /**
  * Props passed to toolbar sub-toolbar components
@@ -608,35 +431,10 @@ interface ToolbarSubToolbarProps {
 }
 
 /**
- * Context passed to toolbar button callbacks
+ * Context passed to toolbar button callbacks and sub-toolbar components
  */
 interface ToolbarContext {
 	pane: PluginPaneContext;
-}
-
-/**
- * Toolbar button provider - contributes buttons to the PathBar toolbar
- */
-interface ToolbarButtonProvider {
-	type: "toolbar";
-	id: string;
-	name: string;
-	priority?: number;
-
-	/** Optional file-type filtering (shows only when matching files selected) */
-	extensions?: string[];
-	mimeTypes?: string[];
-	categories?: FileCategory[];
-	requiresSelection?: boolean;
-
-	/** Button definition */
-	button:
-		| ToolbarButtonDefinition
-		| ToolbarButtonGroupDefinition
-		| ToolbarButtonDropdownDefinition;
-
-	/** Optional sub-toolbar (custom component shown when button is clicked) */
-	subToolbar?: import("svelte").Component<ToolbarSubToolbarProps>;
 }
 
 // ─── File Browser View Provider ──────────────────────────────────────────────
@@ -693,8 +491,8 @@ interface FileBrowserViewProvider {
 
 	/**
 	 * Default item size when a folder has no per-folder override (`itemSize` null).
-	 * Details family uses row-height ticks; thumbnails / gallery use grid ticks; other
-	 * modes use thumbnail tick mapping when a preset is set.
+	 * Details family uses row-height ticks; thumbnails / gallery use grid ticks;
+	 * Boards uses its column-width ticks.
 	 */
 	defaultItemSizePreset?: ViewItemSizePreset;
 
@@ -708,62 +506,6 @@ interface FileBrowserViewProvider {
 	) => import("phoundry-ui").MenuItem[];
 }
 
-// ─── Selection Provider ──────────────────────────────────────────────────────
-
-/**
- * Context passed to selection provider callbacks
- */
-interface SelectionContext {
-	/** The pane context */
-	pane: PluginPaneContext;
-
-	/** Currently selected file entries */
-	selectedFiles: FileEntry[];
-
-	/** Currently selected paths */
-	selectedPaths: string[];
-}
-
-/**
- * A single action item contributed by a selection provider
- */
-interface SelectionProviderItem {
-	id: string;
-	label: string;
-	icon?: string;
-	disabled?: boolean;
-	danger?: boolean;
-	action: (ctx: SelectionContext) => void | Promise<void>;
-}
-
-/**
- * Selection provider - deprecated. The selection toolbar was removed.
- * Use CommandProvider with contextMenu placements (selectionMode: "multi").
- */
-interface SelectionProvider {
-	type: "selection";
-	id: string;
-	name: string;
-	priority?: number;
-
-	/** Optional file-type filtering (only shows when all selected files match) */
-	extensions?: string[];
-	mimeTypes?: string[];
-	categories?: FileCategory[];
-
-	/** Custom handler to check if provider applies to selection */
-	canHandle?: (selectedFiles: FileEntry[]) => boolean;
-
-	/** Minimum number of selected items required (default: 2) */
-	minSelection?: number;
-
-	/** Generate action items for the current selection */
-	getItems: (
-		ctx: SelectionContext,
-		api?: SelectionActionAPI,
-	) => SelectionProviderItem[];
-}
-
 // ─── Module Provider ──────────────────────────────────────────────────────────
 
 /**
@@ -775,6 +517,12 @@ interface ModuleProviderProps {
 
 	/** The module instance configuration */
 	moduleInstance: ModuleInstance;
+
+	/** Replace this instance's opaque state and schedule center-session persistence. */
+	updateState(state: unknown): void;
+
+	/** Request that the host close this module instance. */
+	close(): Promise<void>;
 }
 
 /**
@@ -807,7 +555,13 @@ interface ModuleProvider {
 	/** Whether multiple instances of this module are allowed (default: false) */
 	allowMultiple?: boolean;
 
-	/** If true, the component is fully remounted when switching between instances (needed for lifecycle-heavy modules like Terminal). Default: false. */
+	/**
+	 * If true, the center host fully remounts the component when the remount key
+	 * changes: `getCenterTabIdentity(state)` when defined, otherwise the module
+	 * instance id. Needed for lifecycle-heavy modules (Terminal, Page, Preview)
+	 * so **center tab replacement** reloads content when only state changes.
+	 * Default: false.
+	 */
 	requiresRemount?: boolean;
 
 	/** Default state for new module instances */
@@ -1141,6 +895,18 @@ interface ModalAPI {
 	}): Promise<string | null>;
 
 	alert(opts: { title: string; message: string }): Promise<void>;
+
+	choose<T extends string>(opts: {
+		title: string;
+		message: string;
+		choices: Array<{
+			id: T;
+			label: string;
+			description?: string;
+			variant?: "primary" | "secondary" | "danger";
+		}>;
+		cancelLabel?: string;
+	}): Promise<T | null>;
 }
 
 /**
@@ -1161,6 +927,55 @@ interface FileUtilsAPI {
 	getBasename(path: string): string;
 	getDirname(path: string): string;
 	joinPath(...parts: string[]): string;
+	pickDirectory(options?: {
+		title?: string;
+		initialPath?: string;
+	}): Promise<string | null>;
+	readDirectory(path: string): Promise<FileEntry[]>;
+	readText(path: string): Promise<PluginTextFileSnapshot>;
+	writeText(
+		path: string,
+		content: string,
+		options: {
+			expectedRevision: string | null;
+			overwrite?: boolean;
+		},
+	): Promise<PluginTextWriteResult>;
+	createDirectory(path: string): Promise<void>;
+	renamePath(source: string, destination: string): Promise<void>;
+	trash(paths: string[]): Promise<void>;
+	openPath(path: string): Promise<void>;
+	revealPath(path: string): Promise<void>;
+	watchDirectory(
+		path: string,
+		handler: () => void,
+	): Promise<PluginDirectoryWatch>;
+}
+
+interface PluginTextFileSnapshot {
+	content: string;
+	revision: string;
+}
+
+type PluginTextWriteResult =
+	| { status: "saved"; revision: string }
+	| { status: "conflict"; actualRevision: string | null };
+
+interface PluginDirectoryWatch {
+	unsubscribe(): void;
+}
+
+interface ModuleOpenResult {
+	moduleInstanceId: string;
+	focusedExisting: boolean;
+}
+
+interface ModulesAPI {
+	openCenter(
+		moduleProviderId: string,
+		state: unknown,
+		options?: { sourcePaneId?: string },
+	): Promise<ModuleOpenResult>;
 }
 
 /**
@@ -1242,6 +1057,9 @@ interface PluginAPI {
 	/** File path utilities */
 	files: FileUtilsAPI;
 
+	/** Center-module routing */
+	modules: ModulesAPI;
+
 	/** Event pub/sub for cross-plugin communication */
 	events: EventsAPI;
 }
@@ -1273,62 +1091,6 @@ interface PreviewAPI extends PluginAPI {
 }
 
 /**
- * Selection API for context providers
- */
-interface SelectionAPI {
-	/** Get currently selected files */
-	getSelected(): FileEntry[];
-
-	/** Check if a file is selected */
-	isSelected(file: FileEntry): boolean;
-
-	/** Select a file */
-	select(file: FileEntry): void;
-
-	/** Clear selection */
-	clearSelection(): void;
-}
-
-/**
- * Clipboard API for context providers
- */
-interface ClipboardAPI {
-	/** Copy text to clipboard */
-	writeText(text: string): Promise<void>;
-
-	/** Copy file paths to clipboard */
-	copyPaths(paths: string[]): Promise<void>;
-}
-
-/**
- * File operations API for context providers
- */
-interface FileOpsAPI {
-	/** Delete file (move to trash) */
-	deleteFile(path: string): Promise<void>;
-
-	/** Rename file */
-	renameFile(path: string, newName: string): Promise<string>;
-
-	/** Refresh current directory */
-	refresh(): Promise<void>;
-}
-
-/**
- * Context API - extended API for context providers
- */
-interface ContextAPI extends PluginAPI {
-	/** Access to selection */
-	selection: SelectionAPI;
-
-	/** Clipboard operations */
-	clipboard: ClipboardAPI;
-
-	/** File operations */
-	fileOps: FileOpsAPI;
-}
-
-/**
  * Metadata API - extended API for metadata providers
  */
 interface MetadataAPI extends PluginAPI {
@@ -1337,29 +1099,4 @@ interface MetadataAPI extends PluginAPI {
 
 	/** Read text file content */
 	readTextFile(path: string): Promise<string>;
-}
-
-/**
- * File operations API for selection providers (supports multiple files)
- */
-interface SelectionFileOpsAPI {
-	/** Delete multiple files (move to trash) */
-	deleteFiles(paths: string[]): Promise<void>;
-
-	/** Refresh current directory */
-	refresh(): Promise<void>;
-
-	/** Clear the current selection */
-	clearSelection(): void;
-}
-
-/**
- * Selection action API - extended API for selection providers
- */
-interface SelectionActionAPI extends PluginAPI {
-	/** Clipboard operations */
-	clipboard: ClipboardAPI;
-
-	/** File operations */
-	fileOps: SelectionFileOpsAPI;
 }

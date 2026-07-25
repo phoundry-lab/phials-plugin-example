@@ -47,13 +47,16 @@ type FileCategory =
 interface FileEntry {
 	name: string;
 	path: string;
+	/**
+	 * Host-resolved Iconify glyph. Public directory-listing APIs populate this
+	 * so plugins share Phials' canonical file and folder icon policy.
+	 */
+	icon?: string;
 	is_file: boolean;
 	is_dir: boolean;
 	is_vial: boolean;
 	/** Nested vial folder when listing inside a parent vial */
 	isChildVial?: boolean;
-	/** Listed directory is under a recursive vial (metadata from ancestor root) */
-	isInRecursiveVial?: boolean;
 	/** Listing node is a symlink or Windows directory junction */
 	is_symlink?: boolean;
 	/** Resolved absolute target when healthy; stored link text when broken */
@@ -101,9 +104,9 @@ type CalendarScope = "year" | "month" | "week" | "3day" | "day";
 type CalendarDateSourceId = "created" | "modified" | (string & {});
 
 /**
- * Filter scope for recursive operations
+ * Filter scope for directory listing (current folder vs flatten-with-filters).
  */
-type FilterScope = "current" | "flatten" | "vialFlat";
+type FilterScope = "current" | "flatten";
 
 // ─── Multi-Sort Types ─────────────────────────────────────────────────────────
 
@@ -136,14 +139,7 @@ type TextFilterOp =
  * Filter operators for number properties
  */
 type NumberFilterOp =
-	| "eq"
-	| "neq"
-	| "lt"
-	| "gt"
-	| "lte"
-	| "gte"
-	| "is_empty"
-	| "is_not_empty";
+	"eq" | "neq" | "lt" | "gt" | "lte" | "gte" | "is_empty" | "is_not_empty";
 
 /**
  * Filter operators for date properties
@@ -167,10 +163,7 @@ type SelectFilterOp = "is" | "is_not" | "is_empty" | "is_not_empty";
  * Filter operators for multi-select properties
  */
 type MultiSelectFilterOp =
-	| "contains"
-	| "not_contains"
-	| "is_empty"
-	| "is_not_empty";
+	"contains" | "not_contains" | "is_empty" | "is_not_empty";
 
 /**
  * Filter operators for boolean properties

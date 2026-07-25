@@ -43,6 +43,22 @@ interface ColumnLayoutChangedPayload {
 	sourcePaneId: string;
 }
 
+type LayoutSettledReason =
+	| "center-divider"
+	| "center-structure"
+	| "panel-resize"
+	| "panel-structure"
+	| "panel-transition"
+	| "window-resize"
+	| "window-restore";
+
+/** Semantic notification emitted after shell-owned geometry reaches the DOM. */
+interface LayoutSettledPayload {
+	reasons: LayoutSettledReason[];
+	affectedIds: string[];
+	timestamp: number;
+}
+
 // ─── Core Events ─────────────────────────────────────────────────────────────
 
 /**
@@ -82,8 +98,8 @@ interface CoreEvents {
 		vialPath: string;
 		page: VialPageConfig;
 	};
-	/** Property values or derived-property configuration changed in one Vial. */
-	"core.vial-values.changed": { vialPath: string };
+	/** Canonical cell deltas or a filtered compatibility refetch for one Vial. */
+	"core.vial-values.changed": VialValuesChangedEvent;
 	/** File opened */
 	"core.file.opened": { path: string };
 	/** File created */
@@ -125,6 +141,9 @@ interface CoreEvents {
 
 	/** Details column layout changed in a pane (path-owned or saved-view-owned) */
 	"core.columns.layout.changed": ColumnLayoutChangedPayload;
+
+	/** Shell-owned geometry changed and presented consumers may measure locally. */
+	"core.layout.settled": LayoutSettledPayload;
 }
 
 // ─── Plugin Events ───────────────────────────────────────────────────────────

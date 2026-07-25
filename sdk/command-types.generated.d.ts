@@ -31,7 +31,6 @@ type CommandContextKey =
 	| "selectionIsMixed" // Mix of files and directories
 	// Vial/Collection state
 	| "inVial" // Current directory is a vial
-	| "isRecursiveVial" // Active vial context has recursive subtree indexing
 	| "hasVialSelection" // Selected files are in a vial
 	// Clipboard
 	| "hasClipboard" // Files in clipboard (cut/copy)
@@ -69,9 +68,6 @@ interface CommandContext {
 	/** Whether the saved-views scope has a property schema (e.g. Boards). */
 	hasPropertySchema: boolean;
 
-	/** Active vial uses recursive subtree indexing */
-	isRecursiveVial: boolean;
-
 	/** Active context keys (for debugging/inspection) */
 	activeContextKeys: ReadonlySet<CommandContextKey>;
 }
@@ -97,12 +93,7 @@ interface CommandShortcut {
 /**
  * Areas where commands can be placed in the UI.
  */
-type CommandPlacementArea =
-	| "toolbar"
-	| "headerBar"
-	| "contextMenu"
-	/** @deprecated No UI surface - use `contextMenu` with `selectionMode: "multi"` instead. */
-	| "selectionBar";
+type CommandPlacementArea = "toolbar" | "contextMenu";
 
 /**
  * Base placement configuration.
@@ -137,21 +128,6 @@ interface ToolbarPlacementConfig extends CommandPlacementBase {
 }
 
 /**
- * Header bar placement configuration.
- */
-interface HeaderBarPlacementConfig extends CommandPlacementBase {
-	area: "headerBar";
-	/** Icon override for header display */
-	icon?: string | ((ctx: CommandContext) => string);
-	/** Order priority */
-	priority?: number;
-	/** Toggle/active state indicator */
-	active?: (ctx: CommandContext) => boolean;
-	/** Position in header */
-	section?: "left" | "center" | "right";
-}
-
-/**
  * Context menu placement configuration.
  */
 interface ContextMenuPlacementConfig extends CommandPlacementBase {
@@ -167,28 +143,11 @@ interface ContextMenuPlacementConfig extends CommandPlacementBase {
 }
 
 /**
- * Selection bar placement configuration (multi-select toolbar).
- * @deprecated The selection toolbar was removed. Placements are silently ignored.
- * Use `contextMenu` with `selectionMode: "multi"` instead.
- */
-interface SelectionBarPlacementConfig extends CommandPlacementBase {
-	area: "selectionBar";
-	/** Icon for selection bar */
-	icon?: string;
-	/** Order priority */
-	priority?: number;
-	/** Show as dangerous */
-	danger?: boolean;
-}
-
-/**
  * Union of all placement configurations.
  */
 type CommandPlacement =
 	| ToolbarPlacementConfig
-	| HeaderBarPlacementConfig
-	| ContextMenuPlacementConfig
-	| SelectionBarPlacementConfig;
+	| ContextMenuPlacementConfig;
 
 // ─── Command Definition ──────────────────────────────────────────────────────
 
