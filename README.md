@@ -1,8 +1,8 @@
 # Phials community plugin example
 
-Cloneable starting point for **Phials** community (external) plugins: **Svelte 5**, **TypeScript**, **Vite**, **phoundry-ui** (npm), and a **generated SDK** copied from the closed-source Phials app so you do not import from the Phials `src/` tree.
+Cloneable starting point for **Phials community plugins**: **Svelte 5**, **TypeScript**, **Vite**, **phoundry-ui** (npm), and a **generated SDK** copied from the closed-source Phials app so you do not import from the Phials `src/` tree.
 
-**Trust model:** Community plugins are **trusted JavaScript** running in the Phials renderer. Phials exposes a **permission-gated `PluginAPI`** only for declared manifest permissions. See the [public API contract](https://github.com/phoundry/phials/blob/main/documentation/developer/plugins/public-api-contract.md) (source of truth in the Phials repo).
+**Trust model:** Community plugins are **trusted JavaScript** running in the Phials renderer. Phials exposes a **permission-gated `PluginAPI`** only for declared manifest permissions. See the [public SDK support contract](https://github.com/phoundry/phials/blob/main/documentation/developer/reference/plugin-contract-and-compatibility/public-sdk-support-contract.md) (source of truth in the Phials repo).
 
 ## Prerequisites
 
