@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "id": "example.community-demo",
+    "version": "0.1.0",
+    "minAppVersion": "0.1.0",
+    "pluginApiVersion": "1.0.0"
+  },
+  "compatibility": {
+    "phoundryUi": "^0.1.40"
+  },
+  "candidate": {
+    "sha256": "a0ca83d6bc1907c40d54dbdee2df3b2e643c20893ca841f6549c54c682e09a02",
+    "files": [
+      {
+        "name": "main.js",
+        "size": 1812053,
+        "sha256": "77b6a02b92f1f6e031080c68442dbd36a8403b77a3ee5d2fa3cf905c5efee187"
+      },
+      {
+        "name": "manifest.json",
+        "size": 491,
+        "sha256": "6e7f81ec194ff776b56d6ce2427b5101f7538e508ea45a413ed20bff5152a9c9"
+      },
+      {
+        "name": "styles.css",
+        "size": 38446,
+        "sha256": "c1db9ed345eda26f19d494a3a5a6b861973a278a39c2082c1c482a1deb3b1104"
+      }
+    ]
+  }
+}

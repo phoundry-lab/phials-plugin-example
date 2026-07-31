@@ -1,5 +1,5 @@
 // @generated from phials - do not edit
-// Synced by phials/scripts/sync-plugin-sdk.mjs
+// Source graph: phials/scripts/lib/public-sdk-manifest.mjs
 
 /**
  * File type categories for plugin matching and UI display

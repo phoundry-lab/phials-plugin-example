@@ -1,7 +1,7 @@
 // @generated from phials - do not edit
-// Synced by phials/scripts/sync-plugin-sdk.mjs
+// Source graph: phials/scripts/lib/public-sdk-manifest.mjs
 
-/// <reference path="./pane-context.stub.d.ts" />
+/// <reference path="./pane-context.generated.d.ts" />
 
 /**
  * Command System Type Definitions
@@ -121,8 +121,6 @@ interface ToolbarPlacementConfig extends CommandPlacementBase {
 	active?: (ctx: CommandContext) => boolean;
 	/** Optional activity badge count on the path bar button */
 	badgeCount?: (ctx: CommandContext) => number;
-	/** Group ID for ButtonGroup */
-	group?: string;
 	/** Optional sub-toolbar component shown when button is toggled */
 	subToolbar?: import("svelte").Component<{ ctx: ToolbarContext }>;
 }
@@ -159,6 +157,14 @@ type CommandPlacement =
  * - Toolbar button
  * - Programmatically
  */
+interface CommandPresentation {
+	label?: string;
+	description?: string;
+	tooltip?: string;
+	icon?: string;
+	searchAliases?: string[];
+}
+
 interface Command {
 	/** Unique command identifier (e.g., 'core.file.delete', 'plugin.terminal.toggle') */
 	id: string;
@@ -196,6 +202,9 @@ interface Command {
 	 * Return true to disable.
 	 */
 	disabled?: (ctx: CommandContext) => boolean;
+
+	/** Dynamic display metadata for runtime surfaces; never changes availability. */
+	presentation?: (ctx: CommandContext) => CommandPresentation;
 
 	// ─── Execution ─────────────────────────────────────────────────────────────
 

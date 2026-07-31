@@ -1,7 +1,7 @@
 // @generated from phials - do not edit
-// Synced by phials/scripts/sync-plugin-sdk.mjs
+// Source graph: phials/scripts/lib/public-sdk-manifest.mjs
 
-/// <reference path="./pane-context.stub.d.ts" />
+/// <reference path="./pane-context.generated.d.ts" />
 
 /**
  * Plugin System Type Definitions
@@ -20,6 +20,8 @@
  */
 interface PluginSettingsComponentProps {
 	plugin: PhialsPlugin;
+	/** The same reactive settings object supplied through `PluginAPI.settings`. */
+	settings: PluginSettings;
 }
 
 /**
@@ -36,8 +38,6 @@ interface PhialsPlugin {
 	/** Plugin version (semver) */
 	version: string;
 
-	/** Icons used by this plugin (for preloading) */
-	icons?: string[];
 
 	/** Settings schema contributed by this plugin */
 	settings?: PluginSettingsSchema;
@@ -104,12 +104,7 @@ type PluginProvider =
 /**
  * Provider type discriminator
  */
-type ProviderType =
-	| "preview"
-	| "metadata"
-	| "view"
-	| "module"
-	| "command";
+type ProviderType = "preview" | "metadata" | "view" | "module" | "command";
 
 // ─── Preview Provider ────────────────────────────────────────────────────────
 
@@ -128,10 +123,12 @@ interface PreviewSession {
 
 interface PreviewSessionFactoryProps {
 	file: FileEntry;
+	api: PreviewAPI;
 }
 
 interface PreviewSurfaceProps {
 	file: FileEntry;
+	api: PreviewAPI;
 	session?: PreviewSession;
 	/** Host destination; `embed` requires inspection-only behavior. */
 	destination?: PreviewDestination;
@@ -142,6 +139,7 @@ interface PreviewSurfaceProps {
 
 interface PreviewToolbarContributionProps {
 	file: FileEntry;
+	api: PreviewAPI;
 	session?: PreviewSession;
 	destination: PreviewDestination;
 }
@@ -158,6 +156,7 @@ interface PreviewDestinationCapabilities {
  */
 interface ThumbnailProviderProps {
 	file: FileEntry;
+	api: PreviewAPI;
 	size: number;
 	generatedSize?: number;
 	quality?: number;
@@ -183,9 +182,7 @@ interface PhormatEditorEmbedderHandle {
 	hasActiveDraft(): boolean;
 }
 
-/**
- * Editor bundle props for {@link PreviewToolbar}.
- */
+/** Editor state exposed by a file viewing and editing capability. */
 interface PreviewToolbarEditorState {
 	isDirty: boolean;
 	/** Hide explicit persistence chrome while retaining history controls. */
@@ -235,7 +232,7 @@ interface PreviewProvider {
 
 	/** Behavior */
 	overridesDoubleClick?: boolean;
-	/** Preview can modify file contents (future host behavior; see Preview editor toolbar in docs/context/preview/toolbar.md). */
+	/** Preview can modify file contents; the host exposes editor chrome only when this returns true. */
 	isEditable?: (file: FileEntry, metadata?: FileMetadata) => boolean;
 }
 
@@ -293,7 +290,7 @@ interface MetadataSchemaField {
 	 * v1 implements `"html"` only (sanitized render from `key`); requires `rawKey`.
 	 * On formatted fields, `type` describes the raw value semantics for sort/filter.
 	 */
-	format?: string;
+	format?: "html";
 	/**
 	 * Extracted key for sort, filter, and logic (not a separate schema row).
 	 * Required when `format: "html"`.
@@ -409,6 +406,10 @@ interface MetadataProviderDirectoryStats {
 	ratio: number;
 	fields: MetadataSchemaField[];
 	dominant: boolean;
+	/** Number of matched files inspected for sparse extracted values. */
+	valueSampledFiles?: number;
+	/** Number of inspected files containing at least one eligible value. */
+	valueMatchedFiles?: number;
 }
 
 /**
@@ -743,6 +744,12 @@ interface PluginTableDefinition {
  * Database schema for a plugin
  */
 interface PluginDatabaseSchema {
+	/** Monotonic schema version. */
+	version: number;
+
+	/** Contiguous `N → N+1` migrations. */
+	migrations?: readonly PluginDatabaseMigration[];
+
 	/** Tables owned by this plugin */
 	tables: PluginTableDefinition[];
 }
@@ -851,6 +858,11 @@ interface PluginDatabaseAPI {
 		where?: string,
 		params?: unknown[],
 	): Promise<T[]>;
+
+	/** Run dependent operations in one plugin-scoped transaction. */
+	transaction<T>(
+		callback: (transaction: PluginDatabaseTransaction) => Promise<T>,
+	): Promise<T>;
 }
 
 // ─── Plugin APIs ─────────────────────────────────────────────────────────────
@@ -872,7 +884,16 @@ interface ReadonlyAppSettings {
 interface PluginSettings {
 	get<T>(key: string): T | undefined;
 	set(key: string, value: unknown): Promise<void>;
-	getAll(): Record<string, unknown>;
+	getAll(): Readonly<Record<string, unknown>>;
+	/** Read the unvalidated durable value for migration or recovery. */
+	getStored(key: string): unknown;
+	/** Remove one durable value and reveal the schema default. */
+	unset(key: string): Promise<void>;
+	/** Remove every durable value and reveal all schema defaults. */
+	reset(): Promise<void>;
+	onChange(
+		handler: (change: PluginSettingsChange) => void,
+	): PluginSettingsSubscription;
 }
 
 /**
@@ -892,6 +913,11 @@ interface ModalAPI {
 		message: string;
 		defaultValue?: string;
 		placeholder?: string;
+		confirmLabel?: string;
+		cancelLabel?: string;
+		validate?: (
+			value: string,
+		) => string | null | undefined | Promise<string | null | undefined>;
 	}): Promise<string | null>;
 
 	alert(opts: { title: string; message: string }): Promise<void>;
@@ -912,11 +938,28 @@ interface ModalAPI {
 /**
  * Notification/toast API
  */
+interface NotificationOptions {
+	id?: string;
+	description?: string;
+	duration?: number;
+	dismissible?: boolean;
+	action?: {
+		label: string;
+		onAction: () => void | Promise<void>;
+	};
+}
+
+interface NotificationHandle {
+	readonly id: string;
+	dismiss(): void;
+}
+
 interface NotifyAPI {
-	info(message: string): void;
-	success(message: string): void;
-	warning(message: string): void;
-	error(message: string): void;
+	info(message: string, options?: NotificationOptions): NotificationHandle;
+	success(message: string, options?: NotificationOptions): NotificationHandle;
+	warning(message: string, options?: NotificationOptions): NotificationHandle;
+	error(message: string, options?: NotificationOptions): NotificationHandle;
+	dismiss(id: string): void;
 }
 
 /**
@@ -931,7 +974,7 @@ interface FileUtilsAPI {
 		title?: string;
 		initialPath?: string;
 	}): Promise<string | null>;
-	readDirectory(path: string): Promise<FileEntry[]>;
+	readDirectory(path: string): Promise<PluginDirectoryReadResult>;
 	readText(path: string): Promise<PluginTextFileSnapshot>;
 	writeText(
 		path: string,
@@ -943,9 +986,19 @@ interface FileUtilsAPI {
 	): Promise<PluginTextWriteResult>;
 	createDirectory(path: string): Promise<void>;
 	renamePath(source: string, destination: string): Promise<void>;
-	trash(paths: string[]): Promise<void>;
-	openPath(path: string): Promise<void>;
+	trash(paths: readonly string[]): Promise<readonly PluginPathOutcome[]>;
 	revealPath(path: string): Promise<void>;
+	toAssetUrl(path: string): Promise<string>;
+	readBinary(path: string): Promise<PluginBinaryFileSnapshot>;
+	writeBinary(
+		path: string,
+		content: Uint8Array,
+		options: { expectedRevision: string | null; overwrite?: boolean },
+	): Promise<PluginBinaryWriteResult>;
+	getFolderSummary(
+		path: string,
+		options?: { signal?: AbortSignal },
+	): Promise<FolderSummary>;
 	watchDirectory(
 		path: string,
 		handler: () => void,
@@ -965,10 +1018,6 @@ interface PluginDirectoryWatch {
 	unsubscribe(): void;
 }
 
-interface ModuleOpenResult {
-	moduleInstanceId: string;
-	focusedExisting: boolean;
-}
 
 interface ModulesAPI {
 	openCenter(
@@ -1057,7 +1106,21 @@ interface PluginAPI {
 	/** File path utilities */
 	files: FileUtilsAPI;
 
-	/** Center-module routing */
+	/** Explicit acquisition of stable Explorer pane facades. */
+	explorer: ExplorerAPI;
+
+	/** Fixed read-only repository inspection under filesystem.read. */
+	git: GitAPI;
+
+	/** Permission-gated Workspace Folder data and Page operations. */
+	workspaceFolders: WorkspaceFoldersAPI;
+
+	/** Permission-gated text clipboard. */
+	clipboard: ClipboardAPI;
+	/** Permission-gated network fetch. */
+	fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+
+	/** Center-module routing. */
 	modules: ModulesAPI;
 
 	/** Event pub/sub for cross-plugin communication */
@@ -1094,9 +1157,9 @@ interface PreviewAPI extends PluginAPI {
  * Metadata API - extended API for metadata providers
  */
 interface MetadataAPI extends PluginAPI {
-	/** Read file content as bytes */
-	readFile(path: string): Promise<Uint8Array>;
+	/** Read the exact host-selected extraction target as bytes. */
+	readFile(): Promise<Uint8Array>;
 
-	/** Read text file content */
-	readTextFile(path: string): Promise<string>;
+	/** Read the exact host-selected extraction target as text. */
+	readTextFile(): Promise<string>;
 }

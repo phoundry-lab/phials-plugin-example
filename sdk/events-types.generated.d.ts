@@ -1,5 +1,5 @@
 // @generated from phials - do not edit
-// Synced by phials/scripts/sync-plugin-sdk.mjs
+// Source graph: phials/scripts/lib/public-sdk-manifest.mjs
 
 /**
  * Event System Type Definitions
@@ -18,6 +18,10 @@ interface EventDefinition<T = unknown> {
 	id: string;
 	/** Optional description for docs/debugging */
 	description?: string;
+	/** First Plugin API version that exposes this event. */
+	sincePluginApiVersion: string;
+	/** Plugin owner for custom events; core events have no plugin owner. */
+	pluginId?: string;
 }
 
 /**
@@ -100,6 +104,14 @@ interface CoreEvents {
 	};
 	/** Canonical cell deltas or a filtered compatibility refetch for one Vial. */
 	"core.vial-values.changed": VialValuesChangedEvent;
+	/** Formula output types changed; every pane must normalize its consumers. */
+	"core.vial-formula-output-types.changed": {
+		vialId?: string;
+		vialPath: string;
+		propertyIds: string[];
+		savedViews: SavedVialView[];
+		sourcePaneId: string;
+	};
 	/** File opened */
 	"core.file.opened": { path: string };
 	/** File created */
