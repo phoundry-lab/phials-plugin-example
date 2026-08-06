@@ -91,6 +91,7 @@ type SortOrder = "asc" | "desc";
 type ViewMode =
 	| "details"
 	| "thumbnails"
+	| "masonry"
 	| "column"
 	| "tree"
 	| "boards"

@@ -151,6 +151,12 @@ interface PreviewDestinationCapabilities {
 	embed?: boolean;
 }
 
+/** Intrinsic content dimensions reported by a thumbnail provider. */
+interface ThumbnailIntrinsicDimensions {
+	width: number;
+	height: number;
+}
+
 /**
  * Props passed to thumbnail components
  */
@@ -160,6 +166,10 @@ interface ThumbnailProviderProps {
 	size: number;
 	generatedSize?: number;
 	quality?: number;
+	/** Report meaningful rendered dimensions to hosts that support ratio-aware layouts. */
+	onIntrinsicDimensions?: (
+		dimensions: ThumbnailIntrinsicDimensions,
+	) => void;
 }
 
 /**
@@ -492,7 +502,7 @@ interface FileBrowserViewProvider {
 
 	/**
 	 * Default item size when a folder has no per-folder override (`itemSize` null).
-	 * Details family uses row-height ticks; thumbnails / gallery use grid ticks;
+	 * Details family uses row-height ticks; thumbnails / Masonry / gallery use grid ticks;
 	 * Boards uses its column-width ticks.
 	 */
 	defaultItemSizePreset?: ViewItemSizePreset;
