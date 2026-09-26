@@ -40,4 +40,7 @@ export async function exerciseHighUsefulnessAPI(
 	await api.workspaceFolders.openPage(workspaceFile, {
 		sourcePaneId: pane?.id,
 	});
+
+	await api.openSettings();
+	await api.settings.open();
 }

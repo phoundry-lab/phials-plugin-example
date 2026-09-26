@@ -29,9 +29,9 @@ type CommandContextKey =
 	| "selectionIsFile" // All selected are files
 	| "selectionIsDirectory" // All selected are directories
 	| "selectionIsMixed" // Mix of files and directories
-	// Vial/Collection state
-	| "inVial" // Current directory is a vial
-	| "hasVialSelection" // Selected files are in a vial
+	// Workspace/Collection state
+	| "inWorkspace" // Current directory is a workspace
+	| "hasWorkspaceSelection" // Selected files are in a workspace
 	// Clipboard
 	| "hasClipboard" // Files in clipboard (cut/copy)
 	| "clipboardIsCut" // Clipboard operation is cut
@@ -62,8 +62,8 @@ interface CommandContext {
 	/** Current directory path */
 	currentPath: string;
 
-	/** Whether current directory is a vial */
-	isVial: boolean;
+	/** Whether current directory is a workspace */
+	isWorkspace: boolean;
 
 	/** Whether the saved-views scope has a property schema (e.g. Boards). */
 	hasPropertySchema: boolean;
@@ -143,9 +143,7 @@ interface ContextMenuPlacementConfig extends CommandPlacementBase {
 /**
  * Union of all placement configurations.
  */
-type CommandPlacement =
-	| ToolbarPlacementConfig
-	| ContextMenuPlacementConfig;
+type CommandPlacement = ToolbarPlacementConfig | ContextMenuPlacementConfig;
 
 // ─── Command Definition ──────────────────────────────────────────────────────
 
@@ -256,6 +254,14 @@ interface Command {
 	 * and the UI shows a dropdown menu of child commands instead.
 	 */
 	children?: Command[];
+
+	/**
+	 * Optional custom items for menu surfaces that present this command as a
+	 * submenu. Semantic children remain available to the Command Bar.
+	 */
+	submenuItems?: (
+		ctx: CommandContext,
+	) => import("phoundry-ui").MenuItem[];
 
 	// ─── Custom Rendering ─────────────────────────────────────────────────────
 

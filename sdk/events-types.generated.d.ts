@@ -37,7 +37,7 @@ interface EventSubscription {
  */
 type EventHandler<T = unknown> = (payload: T) => void | Promise<void>;
 
-/** Details column layout live-sync payload (ADR-0010). */
+/** Details column layout live-sync payload. */
 interface ColumnLayoutChangedPayload {
 	browsedPath: string;
 	savedViewsCount: number;
@@ -94,22 +94,27 @@ interface CoreEvents {
 	/** Persisted File Note content was created, updated, or removed */
 	"core.file-note.saved": {
 		path: string;
-		vialPath: string;
+		workspacePath: string;
 		hasNote: boolean;
 	};
-	/** Portable Page visibility/order changed for one Vial. */
-	"core.vial-page-config.changed": {
-		vialPath: string;
-		page: VialPageConfig;
+	/** Portable Page visibility/order changed for one Workspace. */
+	"core.workspace-page-config.changed": {
+		workspacePath: string;
+		page: WorkspacePageConfig;
 	};
-	/** Canonical cell deltas or a filtered compatibility refetch for one Vial. */
-	"core.vial-values.changed": VialValuesChangedEvent;
+	/** Canonical cell deltas or a filtered compatibility refetch for one Workspace. */
+	"core.workspace-values.changed": WorkspaceValuesChangedEvent;
+	/** Workspace Folder Property schemas changed, including paired Relations. */
+	"core.workspace-properties.changed": {
+		workspaceIds: string[];
+		sourcePaneId: string;
+	};
 	/** Formula output types changed; every pane must normalize its consumers. */
-	"core.vial-formula-output-types.changed": {
-		vialId?: string;
-		vialPath: string;
+	"core.workspace-formula-output-types.changed": {
+		workspaceId?: string;
+		workspacePath: string;
 		propertyIds: string[];
-		savedViews: SavedVialView[];
+		savedViews: SavedWorkspaceView[];
 		sourcePaneId: string;
 	};
 	/** File opened */
@@ -129,8 +134,8 @@ interface CoreEvents {
 	/** App setting value changed */
 	"core.settings.changed": { key: string; value: unknown };
 
-	/** Known vials list changed (add/remove/rename in session) */
-	"core.known-vials.changed": { paths: string[] };
+	/** Known workspaces list changed (add/remove/rename in session) */
+	"core.known-workspaces.changed": { paths: string[] };
 
 	/** Explorer always-hide globs changed */
 	"core.config.hidden-globs.changed": { globs: string[] };

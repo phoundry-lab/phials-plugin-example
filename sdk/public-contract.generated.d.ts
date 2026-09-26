@@ -44,7 +44,7 @@ type PluginPathOutcome =
 			readonly path: string;
 			readonly status: "failed";
 			readonly failure: PluginFileFailure;
-		};
+	  };
 
 interface PluginDirectoryReadResult {
 	readonly entries: readonly FileEntry[];
@@ -61,7 +61,7 @@ type PluginBinaryWriteResult =
 	| {
 			readonly status: "conflict";
 			readonly actualRevision: string | null;
-		};
+	  };
 
 interface FolderSummary {
 	readonly path: string;
@@ -105,6 +105,7 @@ type WorkspaceFolderPropertyType =
 	| "text"
 	| "number"
 	| "date"
+	| "calendar"
 	| "boolean"
 	| "select"
 	| "multi-select"
@@ -116,6 +117,18 @@ type WorkspaceFolderPropertyType =
 	| "formula";
 
 type WorkspaceFolderPropertyValue = JsonValue;
+
+type WorkspaceFolderCalendarValue =
+	| {
+			readonly kind: "date";
+			readonly start: string;
+			readonly end?: string;
+	  }
+	| {
+			readonly kind: "datetime";
+			readonly start: string;
+			readonly end?: string;
+	  };
 
 interface WorkspaceFolderPropertyOption {
 	readonly id: string;
@@ -159,9 +172,7 @@ interface WorkspaceFolderPropertyWrite {
 
 interface WorkspaceFoldersAPI {
 	isWorkspaceFolder(path: string): Promise<boolean>;
-	getSchema(
-		workspaceFolderIdOrPath: string,
-	): Promise<WorkspaceFolderSchema>;
+	getSchema(workspaceFolderIdOrPath: string): Promise<WorkspaceFolderSchema>;
 	getPropertyValue(
 		file: WorkspaceFolderFileRef,
 		propertyId: string,
@@ -176,9 +187,22 @@ interface WorkspaceFoldersAPI {
 		values: readonly WorkspaceFolderPropertyWrite[],
 	): Promise<void>;
 	getTags(file: WorkspaceFolderFileRef): Promise<readonly string[]>;
-	setTags(file: WorkspaceFolderFileRef, tags: readonly string[]): Promise<void>;
+	setTags(
+		file: WorkspaceFolderFileRef,
+		tags: readonly string[],
+	): Promise<void>;
 	getRating(file: WorkspaceFolderFileRef): Promise<number | null>;
-	setRating(file: WorkspaceFolderFileRef, rating: number | null): Promise<void>;
+	setRating(
+		file: WorkspaceFolderFileRef,
+		rating: number | null,
+	): Promise<void>;
+	getCalendar(
+		file: WorkspaceFolderFileRef,
+	): Promise<WorkspaceFolderCalendarValue | null>;
+	setCalendar(
+		file: WorkspaceFolderFileRef,
+		value: WorkspaceFolderCalendarValue | null,
+	): Promise<void>;
 	listKnown(): Promise<readonly KnownWorkspaceFolder[]>;
 	openPage(
 		file: WorkspaceFolderFileRef,
@@ -205,11 +229,7 @@ type PluginDatabaseValue = JsonPrimitive | Uint8Array;
 interface PluginDatabaseSchemaOperations {
 	createTable(table: PluginTableDefinition): Promise<void>;
 	addColumn(table: string, column: PluginColumnDefinition): Promise<void>;
-	renameColumn(
-		table: string,
-		from: string,
-		to: string,
-	): Promise<void>;
+	renameColumn(table: string, from: string, to: string): Promise<void>;
 	dropColumn(table: string, column: string): Promise<void>;
 	createIndex(table: string, index: PluginIndexDefinition): Promise<void>;
 	dropIndex(table: string, index: string): Promise<void>;
@@ -271,7 +291,7 @@ interface DetailsViewColumnConfig {
 
 type PagePropertyVisibility = "always" | "not-empty" | "hidden";
 
-interface VialPageConfig {
+interface WorkspacePageConfig {
 	readonly propertyOrder?: readonly string[];
 	readonly propertyVisibility?: Readonly<
 		Record<string, PagePropertyVisibility>
@@ -280,7 +300,7 @@ interface VialPageConfig {
 	readonly fullWidth?: boolean;
 }
 
-interface SavedVialView {
+interface SavedWorkspaceView {
 	readonly id: string;
 	readonly name: string;
 	readonly icon?: string;
@@ -290,38 +310,39 @@ interface SavedVialView {
 }
 
 type PropertyValue = WorkspaceFolderPropertyValue;
-type VialCellDeltaOperation = "set" | "clear" | "pending";
+type WorkspaceCellDeltaOperation = "set" | "clear" | "pending";
 
-interface VialCellDelta {
-	readonly vialId: string;
-	readonly vialPath: string;
+interface WorkspaceCellDelta {
+	readonly workspaceId: string;
+	readonly workspacePath: string;
 	readonly fileId: string;
 	readonly filePath: string;
 	readonly propertyId: string;
-	readonly operation: VialCellDeltaOperation;
+	readonly operation: WorkspaceCellDeltaOperation;
 	readonly value: PropertyValue | null;
 	readonly mutationVersion: number;
 }
 
-interface VialValueDeltaEvent {
+interface WorkspaceValueDeltaEvent {
 	readonly kind: "delta";
 	readonly sourcePaneId: string;
-	readonly cell: VialCellDelta;
-	readonly dependentDeltas: readonly VialCellDelta[];
+	readonly cell: WorkspaceCellDelta;
+	readonly dependentDeltas: readonly WorkspaceCellDelta[];
 }
 
-interface VialValueRefetchEvent {
+interface WorkspaceValueRefetchEvent {
 	readonly kind: "refetch";
 	readonly sourcePaneId: string;
-	readonly vialId: string;
-	readonly vialPath: string;
+	readonly workspaceId: string;
+	readonly workspacePath: string;
 	readonly fileIds?: readonly string[];
 	readonly filePaths?: readonly string[];
 	readonly propertyIds?: readonly string[];
 	readonly reason: "legacy" | "plugin" | "schema";
 }
 
-type VialValuesChangedEvent = VialValueDeltaEvent | VialValueRefetchEvent;
+type WorkspaceValuesChangedEvent =
+	WorkspaceValueDeltaEvent | WorkspaceValueRefetchEvent;
 
 type DrivesChangedPayload = {
 	readonly reason: "mounted" | "unmounted" | "changed" | "poll";

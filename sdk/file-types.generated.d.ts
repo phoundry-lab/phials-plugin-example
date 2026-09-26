@@ -21,6 +21,7 @@ type FileCategory =
 	| "ebook"
 	| "spreadsheet"
 	| "presentation"
+	| "plain text"
 	// Code & Data
 	| "code"
 	| "code - data"
@@ -54,14 +55,16 @@ interface FileEntry {
 	icon?: string;
 	is_file: boolean;
 	is_dir: boolean;
-	is_vial: boolean;
-	/** Nested vial folder when listing inside a parent vial */
-	isChildVial?: boolean;
+	is_workspace: boolean;
+	/** Nested workspace folder when listing inside a parent workspace */
+	isChildWorkspace?: boolean;
 	/** Listing node is a symlink or Windows directory junction */
 	is_symlink?: boolean;
 	/** Resolved absolute target when healthy; stored link text when broken */
 	symlink_target?: string | null;
 	symlink_broken?: boolean;
+	/** Bytes are not local. Set from listing metadata; absent means local or unknown. */
+	online_only?: boolean;
 	size: number;
 	created?: number | null;
 	modified?: number | null;
@@ -101,7 +104,7 @@ type ViewMode =
 /** Calendar view zoom level */
 type CalendarScope = "year" | "month" | "week" | "3day" | "day";
 
-/** Built-in calendar date sources (`created`, `modified`) or a vial property id */
+/** Built-in calendar date sources (`created`, `modified`) or a workspace property id */
 type CalendarDateSourceId = "created" | "modified" | (string & {});
 
 /**

@@ -110,6 +110,9 @@ type ProviderType = "preview" | "metadata" | "view" | "module" | "command";
 
 type PreviewDestination = "module" | "gallery" | "page" | "embed";
 
+/** File-mode vs inspection chrome for a Preview surface. Destination still names the host. */
+type PreviewPresentation = "file" | "inspection";
+
 /** Provider-owned state shared by every presentation of one file preview. */
 interface PreviewSession {
 	/** Clean unreferenced sessions are disposed; unresolved work can retain itself. */
@@ -331,7 +334,11 @@ interface MetadataColumnPolicy {
 	 */
 	columnWhitelist?: string[];
 
-	/** Whether columns can be auto-shown from file matching alone. Default "when-dominant". */
+	/**
+	 * Whether columns can be auto-shown from file matching alone.
+	 * `"when-dominant"` means uniquely leading in the Folder (match ratio, then
+	 * priority). It does not use the profile `dominant` flag.
+	 */
 	autoVisible?: "never" | "when-any" | "when-dominant";
 
 	/** Fields to show automatically when the provider qualifies. Defaults to the first few schema fields. */
@@ -497,13 +504,13 @@ interface FileBrowserViewProvider {
 	/** Optional: custom column configuration for this view */
 	columns?: ViewColumnDefinition[];
 
-	/** If true, this view is only available in collections (vials) */
+	/** If true, this view is only available in collections (workspaces) */
 	collectionOnly?: boolean;
 
 	/**
 	 * Default item size when a folder has no per-folder override (`itemSize` null).
-	 * Details family uses row-height ticks; thumbnails / Masonry / gallery use grid ticks;
-	 * Boards uses its column-width ticks.
+	 * Details family uses row-height ticks; Thumbnails, Masonry, and Gallery each
+	 * have their own S/M/L grid ticks; Boards uses its column-width ticks.
 	 */
 	defaultItemSizePreset?: ViewItemSizePreset;
 
@@ -901,6 +908,8 @@ interface PluginSettings {
 	unset(key: string): Promise<void>;
 	/** Remove every durable value and reveal all schema defaults. */
 	reset(): Promise<void>;
+	/** Open the Phials settings window directly to this plugin's settings page. */
+	open(): Promise<void>;
 	onChange(
 		handler: (change: PluginSettingsChange) => void,
 	): PluginSettingsSubscription;
@@ -1092,6 +1101,9 @@ interface EventsAPI {
  * Base Plugin API - available to all providers
  */
 interface PluginAPI {
+	/** Open the Phials settings window directly to this plugin's settings page. */
+	openSettings(): Promise<void>;
+
 	/** Plugin's own settings */
 	settings: PluginSettings;
 
