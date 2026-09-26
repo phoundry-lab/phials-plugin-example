@@ -265,7 +265,7 @@ export function definePlugin(manifest: PluginManifest, definition: Omit<PhialsPl
  * Supported public plugin API contract for this app build.
  * Keep in sync with `SUPPORTED_PLUGIN_API_VERSION` in `src-tauri/src/lib.rs`.
  */
-export const SUPPORTED_PLUGIN_API_VERSION = "1.0.0" as const;
+export const SUPPORTED_PLUGIN_API_VERSION = "1.1.0" as const;
 
 /**
  * Validate a plugin manifest
@@ -305,8 +305,8 @@ export function validateManifest(manifest: unknown): ValidationResult {
     if (typeof m.pluginApiVersion !== "string" || !m.pluginApiVersion.trim()) {
         errors.push('Missing or invalid "pluginApiVersion" field');
     }
-    else if (m.pluginApiVersion !== SUPPORTED_PLUGIN_API_VERSION) {
-        errors.push(`Invalid "pluginApiVersion": expected exactly "${SUPPORTED_PLUGIN_API_VERSION}"`);
+    else if (!validateSemver(m.pluginApiVersion)) {
+        errors.push('Invalid "pluginApiVersion" format. Must be semver (e.g., "1.1.0")');
     }
     if (typeof m.author !== "string" || !m.author.trim()) {
         errors.push('Missing or invalid "author" field');

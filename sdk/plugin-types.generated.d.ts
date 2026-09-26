@@ -793,6 +793,15 @@ interface PluginStorageAPI {
 	clear(): Promise<void>;
 }
 
+/** Encrypted, Plugin-scoped string storage. The OS credential service unlocks its vault. */
+interface PluginSecretsAPI {
+	status(): Promise<"ready" | "locked">;
+	has(key: string): Promise<boolean>;
+	get(key: string): Promise<string | null>;
+	set(key: string, value: string): Promise<void>;
+	delete(key: string): Promise<void>;
+}
+
 // ─── Plugin Database API ─────────────────────────────────────────────────────
 
 /**
@@ -1100,6 +1109,13 @@ interface EventsAPI {
 /**
  * Base Plugin API - available to all providers
  */
+interface HostFetchInit {
+	method?: string;
+	headers?: Record<string, string>;
+	body?: string | Uint8Array;
+	signal?: AbortSignal;
+}
+
 interface PluginAPI {
 	/** Open the Phials settings window directly to this plugin's settings page. */
 	openSettings(): Promise<void>;
@@ -1110,6 +1126,9 @@ interface PluginAPI {
 	/** Key/value data storage (separate from settings) */
 	storage: PluginStorageAPI;
 
+	/** Encrypted Plugin-scoped secrets. Available since Plugin API 1.1.0. */
+	secrets: PluginSecretsAPI;
+
 	/** SQL database for plugin-owned tables */
 	database: PluginDatabaseAPI;
 
@@ -1118,6 +1137,9 @@ interface PluginAPI {
 
 	/** Invoke Tauri commands (permission-gated allowlist for community plugins) */
 	invoke<T>(command: string, args?: Record<string, unknown>): Promise<T>;
+
+	/** Phials-backed streaming HTTP, gated by network.fetch for community Plugins. */
+	hostFetch?: (url: string, init?: HostFetchInit) => Promise<Response>;
 
 	/** Modal dialogs */
 	modal: ModalAPI;
