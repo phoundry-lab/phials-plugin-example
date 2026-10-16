@@ -1,5 +1,5 @@
 // @generated from phials - do not edit
-// Source graph: phials/scripts/lib/public-sdk-manifest.mjs
+// Source graph: phials/scripts/sdk/lib/public-sdk-manifest.mjs
 
 /** Values that can cross the public plugin boundary as plain data. */
 type JsonPrimitive = string | number | boolean | null;

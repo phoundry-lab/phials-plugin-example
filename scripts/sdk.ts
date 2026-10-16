@@ -17,6 +17,7 @@ const phialsRoot = path.resolve(
 const script = path.join(
   phialsRoot,
   "scripts",
+  "sdk",
   command === "sync" ? "sync-plugin-sdk.mjs" : "verify-plugin-sdk.mjs",
 );
 if (!fs.existsSync(script)) {
