@@ -2,11 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pluginManifest } from "../src/plugin.manifest";
-import type { ReleaseInventory } from "./lib/release-contract";
-import {
-  readCandidateFiles,
-  verifyReleaseInventory,
-} from "./lib/release-contract";
+import { build } from "vite";
+import { readCandidateFiles } from "./release.logic";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -16,10 +13,8 @@ if (homeIndex < 0 || !args[homeIndex + 1]) {
 }
 const phialsHome = path.resolve(args[homeIndex + 1]!);
 const dist = path.join(root, "dist");
-const inventory = JSON.parse(
-  fs.readFileSync(path.join(root, "release", "release-inventory.json"), "utf8"),
-) as ReleaseInventory;
-verifyReleaseInventory(dist, inventory, pluginManifest);
+// Always install a fresh successful build; no inventory prerequisite.
+await build({ root });
 
 const pluginsDirectory = path.join(phialsHome, "plugins");
 const destination = path.join(pluginsDirectory, pluginManifest.id);
@@ -66,4 +61,4 @@ try {
 }
 
 console.log(`Installed ${pluginManifest.id} → ${destination}`);
-console.log(`Candidate SHA-256: ${inventory.candidate.sha256}`);
+console.log("Reload the plugin in Phials to use this build.");

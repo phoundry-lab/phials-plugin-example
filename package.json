@@ -4,31 +4,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx scripts/watch.ts",
-    "build": "tsx scripts/sync-manifest.ts && vite build",
-    "validate": "tsx scripts/validate-dist.ts",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --project tsconfig.tools.json",
     "dev:install": "tsx scripts/dev-install.ts",
-    "sdk:sync": "tsx scripts/sdk.ts sync",
-    "sdk:verify": "tsx scripts/sdk.ts verify",
-    "test:run": "tsx --test tests/*.test.ts",
-    "version:set": "tsx scripts/version-set.ts",
-    "release:inventory": "tsx scripts/release-inventory.ts",
+    "test": "tsx --test tests/*.test.ts",
     "release:verify": "tsx scripts/release-verify.ts"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "devDependencies": {
     "@iconify/svelte": "^5.0.0",
-    "@sveltejs/vite-plugin-svelte": "^5.0.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "@tauri-apps/api": "^2.11.1",
-    "@tsconfig/svelte": "^5.0.4",
-    "phoundry-ui": "^0.1.40",
+    "@phoundry/phials-plugin-sdk": "3.0.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "^24.0.0",
+    "phoundry-ui": "^0.4.16",
     "shiki": "^4.0.2",
-    "svelte": "^5.0.0",
+    "svelte": "^5.57.3",
     "svelte-check": "^4.0.0",
-    "tailwindcss": "^4.0.0",
     "tsx": "^4.19.0",
     "typescript": "~5.6.2",
-    "vite": "^6.0.3"
+    "vite": "^8.3.8"
   }
 }

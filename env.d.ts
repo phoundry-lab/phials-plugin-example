@@ -1,1 +1,1 @@
-/// <reference path="./sdk/phials-plugin-sdk.d.ts" />
+/// <reference types="@phoundry/phials-plugin-sdk" />

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "svelte"],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "env.d.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "vite.config.ts",
+    "src/plugin.manifest.ts"
+  ]
+}

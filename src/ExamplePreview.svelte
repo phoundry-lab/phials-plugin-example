@@ -4,13 +4,7 @@
 	let { file }: PreviewSurfaceProps = $props();
 </script>
 
-<div class="demo-wrap">
-	<p class="text-txt-secondary text-sm">{file.name}</p>
+<section aria-label="Example preview">
+	<p>{file.name}</p>
 	<Button variant="secondary" size="sm">phoundry-ui</Button>
-</div>
-
-<style>
-	.demo-wrap {
-		padding: 1rem;
-	}
-</style>
+</section>

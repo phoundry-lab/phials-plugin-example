@@ -1,10 +1,9 @@
-import "./app.css";
 import ExamplePreview from "./ExamplePreview.svelte";
-import { exampleThumbnailProvider } from "./example-thumbnail.render";
-import { definePlugin } from "../sdk/manifest-schema";
+import { definePlugin } from "@phoundry/phials-plugin-sdk/manifest";
 import { pluginManifest } from "./plugin.manifest";
 import { initializeManifestIconCollections } from "./manifest-icons";
 export { mount, unmount } from "svelte";
+export { pluginManifest as manifest } from "./plugin.manifest";
 
 initializeManifestIconCollections(pluginManifest.icons);
 
@@ -13,7 +12,7 @@ let api: PluginAPI | null = null;
 const helloCommand: Command = {
   id: "example.community-demo.hello",
   label: "Demo: Hello from community plugin",
-  description: "Shows a toast via permission-gated PluginAPI",
+  description: "Shows a toast using the host PluginAPI",
   icon: "mdi:hand-wave",
   category: "View",
   contextKeys: ["always"],
@@ -45,5 +44,5 @@ export default definePlugin(pluginManifest, {
   onDeactivate: () => {
     api = null;
   },
-  providers: [commandProvider, previewProvider, exampleThumbnailProvider],
+  providers: [commandProvider, previewProvider],
 });

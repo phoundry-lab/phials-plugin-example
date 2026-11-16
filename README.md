@@ -1,107 +1,105 @@
-# Phials community plugin starter
+# Phials plugin starter
 
-This repository is the supported starting point for a Phials community plugin. It includes Svelte 5, TypeScript, Vite, Phoundry UI, the generated public Plugin API `1.0.0` SDK, local install tooling, contract tests, and immutable release verification.
+A small Svelte 5 and TypeScript plugin: one command that shows a toast, and one
+preview for files ending in `.phials-demo-preview.txt`. It uses `phoundry-ui`
+components and the host's shared styles. No privileged permissions are needed.
 
-Community plugins are trusted JavaScript running in the Phials renderer. Every privileged operation still goes through the permission-gated `PluginAPI`. The [public SDK support contract](https://github.com/phoundry/phials/blob/main/documentation/developer/reference/plugin-contract-and-compatibility/public-sdk-support-contract.md) defines the supported boundary.
+## Start
 
-## Prerequisites
-
-- Node 20 or newer
-- A local Phials checkout when synchronizing the SDK
-- A Phials development profile for local installation
-
-## First run
+Use Node 24 (the version in `.nvmrc`), then:
 
 ```bash
 npm install
 npm run check
-npm run test:run
+npm test
 npm run build
-npm run validate
 ```
 
-`src/plugin.manifest.ts` is the authored manifest. It uses `definePluginManifest()`, and `src/main.ts` binds the definition to that manifest with `definePlugin(manifest, …)`. The build synchronizes `public/manifest.json`; do not edit the generated copy.
+The build creates `dist/main.js`, `dist/manifest.json`, optional `dist/styles.css`,
+and `release/release-inventory.json`. These are generated files, not source files
+to edit or commit. Both production and watch builds generate their own metadata.
 
-The manifest also owns the Iconify names the plugin preloads. `src/manifest-icons.ts` initializes the required collections before activation. Keep those declarations aligned with every icon used by the plugin.
+## Write your plugin
 
-## Develop and reload
+- `src/main.ts` defines the command, preview, and activation/deactivation hooks.
+  It exports the manifest and Svelte's `mount`/`unmount` for the host.
+- `src/ExamplePreview.svelte` is the preview component.
+- `src/plugin.manifest.ts` owns plugin metadata and permissions. Change its ID
+  and repository when starting your own plugin. The version comes directly from
+  `package.json`; update it there or use `npm version patch --no-git-tag-version`.
+- `src/manifest-icons.ts` registers packaged Phoundry icon collections. Declare
+  icons in the manifest so Phials can preload other Iconify icons too.
 
-Start coordinated manifest synchronization and a Vite watch build:
+The public Plugin API comes from `@phoundry/phials-plugin-sdk`, pinned to version
+3.0.0. No copied SDK or Phials checkout is needed. Import runtime manifest helpers
+from `@phoundry/phials-plugin-sdk/manifest`; `env.d.ts` includes the public ambient
+types. SDK upgrades are normal dependency updates. Changing API major versions
+also requires migrating the plugin and its manifest.
+
+Plugins are trusted JavaScript in the Phials renderer, not sandboxed code.
+Privileged operations use the permission-gated `PluginAPI`; declare only the
+permissions your plugin actually needs.
+
+## CSS
+
+Use ordinary Svelte/CSS styling. There is no CSS policy, token scanner, selector
+ban, or enforced `phoundry-ui` version range beyond the package dependency.
+Phials already supplies the shared UI styles and theme; the starter does not
+bundle another global reset or require Tailwind. You can add your preferred
+styling tools if needed.
+
+Plugin styles share the application's document, so global rules also affect the
+surrounding app. Component-scoped styles are a useful default, not a build gate.
+
+## Develop locally
+
+Rebuild on source changes:
 
 ```bash
 npm run dev
 ```
 
-Install the current `dist/` candidate into an isolated Phials Home:
+To build and install into an explicit, isolated Phials Home:
 
 ```bash
 npm run dev:install -- --phials-home /absolute/path/to/dev-phials-home
 ```
 
-The installer derives the destination from the manifest id, accepts only supported release assets, verifies the exact candidate checksum, and atomically replaces an existing development install. Re-running it is safe and reports the installed destination and checksum.
+Run Phials with that same home (`PHIALS_HOME=/absolute/path/to/dev-phials-home`).
+The installer builds first, stages files under `plugins/<manifest-id>`, and
+replaces the previous installation with rollback on failure. It does not require
+a pre-existing release inventory. Re-run it after changes, then reload the plugin
+in Settings → Plugins. Watching alone does not install or hot-reload the plugin.
 
-In Phials Settings → Plugins:
-
-1. Confirm the Installed, Enabled, Loaded, and Activated stages.
-2. Review changed permissions before enabling.
-3. Use Reload after rebuilding.
-4. Use Copy diagnostics when a stage fails; the copied text includes a stable diagnostic code.
-
-Routine activation does not show a notification. The stage badges and diagnostics are the source of truth.
-
-## Synchronize the SDK
-
-Point `PHIALS_ROOT` at a local Phials checkout when it is not the default sibling:
-
-```bash
-PHIALS_ROOT=/absolute/path/to/phials npm run sdk:sync
-PHIALS_ROOT=/absolute/path/to/phials npm run sdk:verify
-```
-
-`sdk:sync` updates the committed generated SDK. `sdk:verify` is non-mutating and fails when the committed SDK differs from Phials.
-
-## Test the public contract
-
-```bash
-npm run test:run
-```
-
-The harness covers definition and provider shape, Svelte component mount/unmount, accessible controls, permission failures, lifecycle cleanup, deterministic candidate checksums, and unsafe CSS rejection. Add focused tests for behavior your plugin owns.
-
-Phoundry UI is pinned to the starter compatibility policy `^0.1.40`. Plugin CSS may use Phoundry UI tokens, but it must not redefine host tokens or apply unscoped `:root`, `html`, or `body` rules.
-
-## Set a version and create a release candidate
-
-Set the version once across the package and source manifest:
-
-```bash
-npm run version:set -- 1.2.3
-```
-
-Then create and verify the candidate:
+## Release
 
 ```bash
 npm run check
-npm run test:run
+npm test
 npm run build
-npm run validate
-npm run release:inventory
 npm run release:verify
 ```
 
-`release/release-inventory.json` records the exact canonical assets, byte sizes, SHA-256 digests, identity, compatibility policy, and candidate checksum. Verification is non-mutating.
+Build automatically inventories the exact emitted bytes. `release:verify` checks
+those existing bytes and the bundled manifest without rebuilding or rewriting
+anything. Build and verification import your own bundle to check its exports;
+they are not a safe way to inspect untrusted third-party plugins.
 
-Attach exactly the inventory files to the matching stable GitHub Release:
+Attach the files listed in `release/release-inventory.json` from `dist/` to the
+matching GitHub Release. The current host accepts `main.js`, `manifest.json`,
+optional `styles.css`, and optional complete `theme-<slug>.json` / `.css` pairs.
+Other assets must currently be bundled/inlined: nested release directories and
+separate chunks are not supported by the host's installation format.
 
-- `manifest.json`
-- `main.js`
-- `styles.css`, when emitted
-- complete flat theme pairs named `theme-<slug>.json` and `theme-<slug>.css`, when emitted
+For community registry submission, provide the repository, stable tag, version,
+candidate checksum, and exact asset inventory. Never replace the bytes of an
+existing published version; publish a new version instead.
 
-Do not attach source archives, unresolved chunks, maps, nested directories, or other files as plugin assets. Phials and the registry install only the attached immutable bytes; there is no raw-repository fallback.
+To update the SDK dependency:
 
-## Registry submission and recovery
+```bash
+npm install --save-dev --save-exact @phoundry/phials-plugin-sdk@<version>
+```
 
-Submit the repository, stable tag, version, candidate checksum, and exact asset inventory to the [community registry](https://github.com/EliWimmer/phials-plugins). Registry CI verifies repository ownership and availability, the latest stable release, asset identity, every byte checksum, and manifest identity.
-
-Never replace assets for an existing version. Publish a new version to recover from a broken release. A registry maintainer can temporarily unlist the record without remotely disabling or uninstalling existing copies, then restore it from a newly verified inventory.
+Run the checks above and keep the manifest's `pluginApiVersion` aligned with the
+API contract the plugin actually requires.

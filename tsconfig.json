@@ -12,5 +12,5 @@
 		"types": ["svelte"],
 		"isolatedModules": true
 	},
-	"include": ["env.d.ts", "src/**/*.ts", "src/**/*.svelte", "sdk/**/*.ts", "sdk/**/*.d.ts"]
+	"include": ["env.d.ts", "src/**/*.ts", "src/**/*.svelte"]
 }
