@@ -1,5 +1,6 @@
 import "./app.css";
 import ExamplePreview from "./ExamplePreview.svelte";
+import { exampleThumbnailProvider } from "./example-thumbnail.render";
 import { definePlugin } from "../sdk/manifest-schema";
 import { pluginManifest } from "./plugin.manifest";
 import { initializeManifestIconCollections } from "./manifest-icons";
@@ -33,7 +34,6 @@ const previewProvider: PreviewProvider = {
   id: "example.community-demo.preview",
   name: "Example phoundry-ui preview",
   canHandle: (file) => file.name.endsWith(".phials-demo-preview.txt"),
-  thumbnail: ExamplePreview,
   surface: ExamplePreview,
   destinations: { pageTab: true },
 };
@@ -45,5 +45,5 @@ export default definePlugin(pluginManifest, {
   onDeactivate: () => {
     api = null;
   },
-  providers: [commandProvider, previewProvider],
+  providers: [commandProvider, previewProvider, exampleThumbnailProvider],
 });

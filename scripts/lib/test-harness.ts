@@ -18,17 +18,82 @@ export async function runLifecycleHarness(
   return probe;
 }
 
-export function assertProviderContract(
-  providers: readonly Record<string, unknown>[],
-): void {
+const PROVIDER_TYPES = new Set([
+  "preview",
+  "thumbnail",
+  "metadata",
+  "view",
+  "module",
+  "command",
+]);
+
+export function assertProviderContract(providers: readonly unknown[]): void {
   const ids = new Set<string>();
-  for (const provider of providers) {
+  for (const [index, raw] of providers.entries()) {
+    if (!raw || typeof raw !== "object") {
+      throw new Error(`providers[${index}] must be an object`);
+    }
+    const provider = raw as Record<string, unknown>;
     if (
       typeof provider.id !== "string" ||
       typeof provider.name !== "string" ||
-      typeof provider.type !== "string"
+      typeof provider.type !== "string" ||
+      !PROVIDER_TYPES.has(provider.type)
     ) {
-      throw new Error("Provider must have string id, name, and type");
+      throw new Error(`providers[${index}] has an invalid public provider shape`);
+    }
+    if (
+      provider.type === "thumbnail" &&
+      (typeof provider.rendererVersion !== "string" ||
+        !provider.rendererVersion.trim() ||
+        typeof provider.render !== "function" ||
+        (provider.priority !== undefined &&
+          (typeof provider.priority !== "number" ||
+            !Number.isFinite(provider.priority))) ||
+        [
+          "extensions",
+          "mimeTypes",
+          "categories",
+          "requiredHostFeatures",
+          "requiredHostPlatforms",
+          "presentationVariants",
+        ].some(
+          (key) =>
+            provider[key] !== undefined &&
+            (!Array.isArray(provider[key]) ||
+              !provider[key].every((value) => typeof value === "string")),
+        ) ||
+        (provider.canHandle !== undefined &&
+          typeof provider.canHandle !== "function") ||
+        (Array.isArray(provider.presentationVariants) &&
+          provider.presentationVariants.some(
+            (value) => value !== "platform" && value !== "theme",
+          )) ||
+        (Array.isArray(provider.requiredHostPlatforms) &&
+          provider.requiredHostPlatforms.some(
+            (value) => !["macos", "windows", "linux", "other"].includes(value),
+          )) ||
+        (Array.isArray(provider.requiredHostFeatures) &&
+          provider.requiredHostFeatures.some(
+            (value) =>
+              ![
+                "audioProxy",
+                "rawProxy",
+                "sqlite",
+                "dmg",
+                "macApp",
+                "appIcon",
+              ].includes(value),
+          )))
+    ) {
+      throw new Error(
+        `providers[${index}] has an invalid ThumbnailProvider contract`,
+      );
+    }
+    if (provider.type === "preview" && provider.thumbnail !== undefined) {
+      throw new Error(
+        "PreviewProvider.thumbnail is not a public contribution; register a ThumbnailProvider",
+      );
     }
     if (ids.has(provider.id)) throw new Error(`Duplicate provider ${provider.id}`);
     ids.add(provider.id);

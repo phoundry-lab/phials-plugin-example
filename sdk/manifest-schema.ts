@@ -69,6 +69,13 @@ export interface PluginManifest {
     icons?: string[];
     /** Required permissions */
     permissions?: PluginPermission[];
+    /** Optional complete Thumbnail contribution catalog used by the owning Host to retire obsolete renderers. Introduced in Plugin API 2.0.0.
+     * @since 2.0.0
+     */
+    thumbnailProviders?: {
+        id: string;
+        rendererVersion: string;
+    }[];
 }
 
 export interface PluginIdentity {
@@ -111,6 +118,7 @@ const MANIFEST_FIELDS = new Set([
     "repository",
     "icons",
     "permissions",
+    "thumbnailProviders",
 ]);
 
 const VALID_PERMISSIONS = new Set<PluginPermission>([
@@ -265,7 +273,7 @@ export function definePlugin(manifest: PluginManifest, definition: Omit<PhialsPl
  * Supported public plugin API contract for this app build.
  * Keep in sync with `SUPPORTED_PLUGIN_API_VERSION` in `src-tauri/src/lib.rs`.
  */
-export const SUPPORTED_PLUGIN_API_VERSION = "1.1.0" as const;
+export const SUPPORTED_PLUGIN_API_VERSION = "2.1.0" as const;
 
 /**
  * Validate a plugin manifest
@@ -306,7 +314,7 @@ export function validateManifest(manifest: unknown): ValidationResult {
         errors.push('Missing or invalid "pluginApiVersion" field');
     }
     else if (!validateSemver(m.pluginApiVersion)) {
-        errors.push('Invalid "pluginApiVersion" format. Must be semver (e.g., "1.1.0")');
+        errors.push('Invalid "pluginApiVersion" format. Must be semver (e.g., "2.0.0")');
     }
     if (typeof m.author !== "string" || !m.author.trim()) {
         errors.push('Missing or invalid "author" field');
@@ -351,6 +359,32 @@ export function validateManifest(manifest: unknown): ValidationResult {
                 else {
                     seen.add(icon);
                 }
+            }
+        }
+    }
+    if (m.thumbnailProviders !== undefined) {
+        if (!Array.isArray(m.thumbnailProviders) ||
+            m.thumbnailProviders.length > 128)
+            errors.push('Invalid "thumbnailProviders" declaration');
+        else {
+            const seen = new Set<string>();
+            for (const item of m.thumbnailProviders) {
+                if (!item || typeof item !== "object" || Array.isArray(item)) {
+                    errors.push("Invalid Thumbnail provider declaration");
+                    continue;
+                }
+                const declaration = item as Record<string, unknown>;
+                if (Object.keys(declaration).some((key) => !["id", "rendererVersion"].includes(key)) ||
+                    typeof declaration.id !== "string" ||
+                    !declaration.id.trim() ||
+                    declaration.id.length > 256 ||
+                    typeof declaration.rendererVersion !== "string" ||
+                    !declaration.rendererVersion.trim() ||
+                    declaration.rendererVersion.length > 256 ||
+                    seen.has(declaration.id))
+                    errors.push("Invalid or duplicate Thumbnail provider declaration");
+                else
+                    seen.add(declaration.id);
             }
         }
     }

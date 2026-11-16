@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { assertProviderContract } from "./test-harness";
 import type { PluginManifest } from "../../sdk/manifest-schema";
 import {
   manifestIdentity,
@@ -14,7 +15,7 @@ export const RELEASE_INVENTORY_SCHEMA_VERSION = 1;
 const CORE_ASSETS = new Set(["manifest.json", "main.js", "styles.css"]);
 const THEME_ASSET = /^theme-([a-z0-9][a-z0-9-]*)\.(json|css)$/;
 const HOST_TOKEN_DECLARATION =
-  /--(?:(?:surface-(?:sunken|base|raised|overlay))|(?:border-(?:muted|default|emphasis))|(?:text-(?:primary|secondary|tertiary|inverse))|(?:accent-(?:primary|primary-hover|primary-active|secondary))|(?:semantic-(?:success|warning|error|info))|(?:selection-(?:bg|text))|focus-ring|(?:option-(?:red|orange|yellow|green|cyan|blue|purple|pink|gray))|(?:shadow-panel)|(?:(?:button|input|select|badge|modal|tooltip|toast|ctx|tab|tree|table|editor)-[a-z0-9-]+))\s*:/i;
+  /--(?:ph(?:ials)?-[a-z0-9-]+|(?:surface-(?:sunken|base|raised|overlay))|(?:border-(?:muted|default|emphasis))|(?:text-(?:primary|secondary|tertiary|inverse))|(?:accent-(?:primary|primary-hover|primary-active|secondary))|(?:semantic-(?:success|warning|error|info))|(?:selection-(?:bg|text))|focus-ring|(?:option-(?:red|orange|yellow|green|cyan|blue|purple|pink|gray))|(?:shadow-panel)|(?:(?:button|input|select|badge|modal|tooltip|toast|ctx|tab|tree|table|editor)-[a-z0-9-]+))\s*:/i;
 
 export interface ReleaseInventoryFile {
   name: string;
@@ -175,13 +176,16 @@ export function assertPhoundryUiCompatibility(
 
 function providerUsesSvelte(provider: Record<string, unknown>): boolean {
   if (provider.type === "preview") {
-    return Boolean(provider.surface || provider.thumbnail || provider.toolbar);
+    return Boolean(provider.surface || provider.toolbar);
   }
   if (provider.type === "view" || provider.type === "module") {
     return Boolean(provider.component);
   }
   if (provider.type === "command") {
-    return JSON.stringify(provider).includes("component");
+    return Object.values(provider).some(
+      (value) =>
+        typeof value === "object" && value !== null && "component" in value,
+    );
   }
   return false;
 }
@@ -206,28 +210,10 @@ export async function loadAndValidatePluginModule(
   if (!Array.isArray(plugin.providers)) {
     throw new Error("Plugin definition must contain a providers array");
   }
-  const providerIds = new Set<string>();
-  let usesSvelte = false;
-  for (const [index, raw] of plugin.providers.entries()) {
-    if (!raw || typeof raw !== "object") {
-      throw new Error(`providers[${index}] must be an object`);
-    }
-    const provider = raw as Record<string, unknown>;
-    if (
-      typeof provider.id !== "string" ||
-      typeof provider.name !== "string" ||
-      typeof provider.type !== "string"
-    ) {
-      throw new Error(
-        `providers[${index}] must define string id, name, and type`,
-      );
-    }
-    if (providerIds.has(provider.id)) {
-      throw new Error(`Duplicate provider id "${provider.id}"`);
-    }
-    providerIds.add(provider.id);
-    usesSvelte ||= providerUsesSvelte(provider);
-  }
+  assertProviderContract(plugin.providers);
+  const usesSvelte = plugin.providers.some((provider) =>
+    providerUsesSvelte(provider as Record<string, unknown>),
+  );
   const identity = validateIdentityProjections(manifestIdentity(manifest), [
     {
       source: "exportedDefinition",

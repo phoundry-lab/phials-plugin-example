@@ -22,6 +22,12 @@ interface PluginSettingsComponentProps {
 	plugin: PhialsPlugin;
 	/** The same reactive settings object supplied through `PluginAPI.settings`. */
 	settings: PluginSettings;
+	/** Client-owned Recovery capability for this Settings document. */
+	recovery?: PluginEditorRecoveryHandle;
+	/** Register unsubmitted form state for framework checkpointing. */
+	registerRecovery?: (
+		contributor: PluginEditorRecoveryContributor,
+	) => () => void;
 }
 
 /**
@@ -96,6 +102,7 @@ interface PluginSvelteRuntime {
  */
 type PluginProvider =
 	| PreviewProvider
+	| ThumbnailProvider
 	| MetadataProvider
 	| FileBrowserViewProvider
 	| ModuleProvider
@@ -104,7 +111,8 @@ type PluginProvider =
 /**
  * Provider type discriminator
  */
-type ProviderType = "preview" | "metadata" | "view" | "module" | "command";
+type ProviderType =
+	"preview" | "thumbnail" | "metadata" | "view" | "module" | "command";
 
 // ─── Preview Provider ────────────────────────────────────────────────────────
 
@@ -122,14 +130,17 @@ interface PreviewSession {
 	relocate?: (oldPath: string, newPath: string) => void | Promise<void>;
 	/** Standard editor state rendered by host preview toolbars. */
 	editor?: PreviewToolbarEditorState;
+	recovery?: PluginEditorRecoveryContributor;
 }
 
 interface PreviewSessionFactoryProps {
+	recovery?: PluginEditorRecoveryHandle;
 	file: FileEntry;
 	api: PreviewAPI;
 }
 
 interface PreviewSurfaceProps {
+	recovery?: PluginEditorRecoveryHandle;
 	file: FileEntry;
 	api: PreviewAPI;
 	session?: PreviewSession;
@@ -154,25 +165,130 @@ interface PreviewDestinationCapabilities {
 	embed?: boolean;
 }
 
+/** A static raster renderer selected independently from Preview and Editor providers. */
+interface ThumbnailProvider {
+	type: "thumbnail";
+	id: string;
+	name: string;
+	priority?: number;
+	extensions?: string[];
+	mimeTypes?: string[];
+	categories?: FileCategory[];
+	canHandle?: (file: FileEntry, api: FileMatchAPI) => boolean;
+	/** Change when rendering behavior changes. */
+	rendererVersion: string;
+	/** Declare Client presentation inputs that can change the encoded image. */
+	presentationVariants?: readonly ("platform" | "theme")[];
+	/** Host capabilities required by this renderer. */
+	requiredHostFeatures?: ThumbnailHostFeature[];
+	/** Executing Host platform eligibility, independent of the Client OS. */
+	requiredHostPlatforms?: readonly (
+		"macos" | "windows" | "linux" | "other"
+	)[];
+	render(
+		context: ThumbnailRenderContext,
+	): Promise<ThumbnailRenderResult> | ThumbnailRenderResult;
+}
+
+type ThumbnailHostFeature =
+	"audioProxy" | "rawProxy" | "sqlite" | "dmg" | "macApp" | "appIcon";
+
+/** Framework-minted result owned by the live request; cannot be constructed by a Plugin. */
+interface ThumbnailNativeResult {
+	readonly status: "native-image";
+}
+interface ThumbnailNativeAccess {
+	/** Existing built-in native icon authority on the owning Host. */
+	appIcon(): Promise<ThumbnailNativeResult | { status: "no-image" }>;
+	dmg(): Promise<ThumbnailNativeResult | { status: "no-image" }>;
+	steam(): Promise<ThumbnailNativeResult | { status: "no-image" }>;
+	folder(): Promise<ThumbnailNativeResult | { status: "no-image" }>;
+	image(): Promise<ThumbnailNativeResult>;
+	video(): Promise<ThumbnailNativeResult>;
+	audioArtwork(): Promise<ThumbnailNativeResult | { status: "no-image" }>;
+}
+type ThumbnailRenderResult =
+	| Blob
+	/** Static semantic HTML; Phials sanitizes, styles, and clips it to the Thumbnail frame.
+	 * No scripts, resources, custom CSS, or interaction. Introduced in Plugin API 2.1.0.
+	 * @since 2.1.0
+	 */
+	| { status: "html"; html: string }
+	| { status: "no-image" }
+	| ThumbnailNativeResult;
+
+/** Captured inputs supplied automatically by Phials; providers never choose cache destinations. */
+interface ThumbnailRenderContext {
+	readonly file: Readonly<FileEntry>;
+	readonly host: Readonly<{ hostId: string; session: number }>;
+	readonly plugin: Readonly<{ id: string; version: string }>;
+	readonly provider: Readonly<{ id: string; rendererVersion: string }>;
+	readonly generation: Readonly<{ size: number; quality: number }>;
+	readonly settings: Readonly<Record<string, unknown>>;
+	/** Captured platform and, when declared, theme ID, theme.color-scheme, theme.preferred-color-scheme and theme.<semantic-token> colors. */
+	readonly variants: Readonly<Record<string, string>>;
+	readonly signal: AbortSignal;
+	readonly content: ThumbnailContentAccess;
+	readonly native: ThumbnailNativeAccess;
+	/** Encode a static canvas using the captured generation parameters. */
+	encode(
+		canvas: HTMLCanvasElement,
+		format?: ThumbnailRasterFormat,
+	): Promise<Blob>;
+}
+
+type ThumbnailRasterFormat = "image/png" | "image/jpeg" | "image/webp";
+
+/** Read-only access uses the owning Plugin's existing Host admission and permissions. */
+interface ThumbnailContentSnapshot {
+	/** Size and filesystem observation revision belong to the granted bytes. */
+	readonly size: number;
+	readonly sourceRevision: string;
+	/** A bounded window of one pinned source; offsets and length are bytes. */
+	readRange(offset: number, length: number): Promise<Uint8Array>;
+	/** Idempotent; the framework also releases this resource when rendering ends. */
+	close(): Promise<void>;
+}
+interface ThumbnailContentAccess {
+	/** Grant a revision-pinned source without loading the complete File. */
+	openSnapshot(path?: string): Promise<ThumbnailContentSnapshot>;
+	/** Bounded UTF-8 display prefix, tracked against the captured source revision. */
+	readTextPrefix(path?: string, limit?: number): Promise<string>;
+	/** Raw source-bound prefix; at most256KiB, without whole-File snapshot assembly. */
+	readBinaryPrefix(path?: string, limit?: number): Promise<Uint8Array>;
+	readText(path?: string): Promise<PluginTextFileSnapshot>;
+	readBinary(path?: string): Promise<PluginBinaryFileSnapshot>;
+	readDirectory(path?: string): Promise<PluginDirectoryReadResult>;
+	/** Host reruns this bounded, deterministic selection, including successful absence. */
+	selectDirectory(
+		path: string,
+		selection: ThumbnailDirectorySelection,
+	): Promise<string | null>;
+	/** Additional ambient inputs must be declared in a form the Host can validate. */
+	declareInput(input: ThumbnailInputDeclaration): Promise<void>;
+}
+
+interface ThumbnailDirectorySelection {
+	readonly stems: readonly string[];
+	readonly extensions: readonly string[];
+	readonly contains?: readonly string[];
+}
+type ThumbnailInputDeclaration =
+	| {
+			readonly type: "file";
+			readonly path: string;
+			readonly revision?: string;
+	  }
+	| {
+			readonly type: "directory";
+			readonly path: string;
+			readonly selection?: ThumbnailDirectorySelection;
+	  };
+
 /** Intrinsic content dimensions reported by a thumbnail provider. */
 interface ThumbnailIntrinsicDimensions {
 	width: number;
 	height: number;
-}
-
-/**
- * Props passed to thumbnail components
- */
-interface ThumbnailProviderProps {
-	file: FileEntry;
-	api: PreviewAPI;
-	size: number;
-	generatedSize?: number;
-	quality?: number;
-	/** Report meaningful rendered dimensions to hosts that support ratio-aware layouts. */
-	onIntrinsicDimensions?: (
-		dimensions: ThumbnailIntrinsicDimensions,
-	) => void;
 }
 
 /**
@@ -190,9 +306,24 @@ interface EditorHistoryHandle {
 	canRedo: boolean;
 }
 
+interface PhormatEditorRecoveryDraft {
+	blockPath: number[];
+	tableCell: { row: number; col: number } | null;
+	inlines: unknown[];
+	lastCommittedPlain: string;
+	selection: { start: number; end: number };
+}
+interface PhormatEditorRecoverySnapshot {
+	version: 1;
+	source: string;
+	draft: PhormatEditorRecoveryDraft | null;
+}
 interface PhormatEditorEmbedderHandle {
 	prepareForSave(): string;
 	hasActiveDraft(): boolean;
+	captureRecovery(): PhormatEditorRecoverySnapshot;
+	restoreRecovery(snapshot: PhormatEditorRecoverySnapshot): void;
+	subscribeRecovery(handler: () => void): () => void;
 }
 
 /** Editor state exposed by a file viewing and editing capability. */
@@ -204,7 +335,7 @@ interface PreviewToolbarEditorState {
 	onSave: () => void | Promise<void>;
 	/** Await autosave finalization before replacing the current document. */
 	onFinalize?: () => Promise<boolean>;
-	onRevert?: () => void;
+	onRevert?: () => void | Promise<void>;
 	history?: EditorHistoryHandle;
 	saveLabel?: string;
 	saveSavingLabel?: string;
@@ -218,7 +349,7 @@ interface PreviewToolbarEditorState {
 }
 
 /**
- * Preview provider - renders file previews, thumbnails, and fullscreen views
+ * Preview provider - renders File previews and fullscreen views
  */
 interface PreviewProvider {
 	type: "preview";
@@ -233,7 +364,6 @@ interface PreviewProvider {
 	canHandle?: (file: FileEntry, api: FileMatchAPI) => boolean;
 
 	/** Components */
-	thumbnail?: import("svelte").Component<ThumbnailProviderProps>;
 	/** Responsive file-specific viewer/editor used by every host destination. */
 	surface?: import("svelte").Component<PreviewSurfaceProps>;
 	createSession?: (
@@ -530,6 +660,9 @@ interface FileBrowserViewProvider {
  * Props passed to module components
  */
 interface ModuleProviderProps {
+	/** Whether this retained surface is currently presented. Omitted by older hosts.
+	 * Release presentation resources while false, retaining working state and drafts. */
+	presented?: boolean;
 	/** The pane context (for pane-scoped modules) */
 	pane?: PluginPaneContext;
 
@@ -993,6 +1126,56 @@ interface NotifyAPI {
 /**
  * File utilities API
  */
+interface PluginEditorDraft {
+	readonly payload: JsonValue;
+	readonly blobs?: readonly PluginRecoveryBlob[];
+}
+interface PluginRecoveryBlob {
+	readonly id: string;
+	readonly size: number;
+	readonly contentType: string;
+}
+interface PluginEditorRecoveryContributor {
+	/** Actual loaded resource revision; never a read-order counter or guessed timestamp. */
+	readonly baselineRevision: string | null;
+	readonly payloadVersion: number;
+	capture(): Promise<PluginEditorDraft>;
+	validate(payload: unknown, payloadVersion: number): payload is JsonValue;
+	restore(draft: PluginEditorDraft): Promise<void>;
+	subscribeChanges(handler: () => void): () => void;
+	/** Verify freshly read content/revision against currentDraft; saved means that whole draft is persisted. */
+	reconcile?(
+		currentDraft: PluginEditorDraft,
+	): Promise<PluginRecoveryVerification>;
+}
+interface PluginRecoveryVerification {
+	readonly status: "saved" | "unsaved" | "conflict" | "unknown";
+	readonly revision: string | null;
+}
+interface PluginRecoveryInitialization {
+	readonly restored: boolean;
+	readonly paused: boolean;
+	readonly baselineRevision: string | null;
+}
+interface PluginEditorRecoveryHandle {
+	/** Freeze the exact attempted Editor snapshot before edits can advance. Await binding before execute(). */
+	bindPreparedWrite(
+		write: PluginPreparedWrite<unknown>,
+		draft: PluginEditorDraft,
+		payloadVersion: number,
+	): Promise<void>;
+	/** Await before starting any Host load/reset. Repeated calls with the same contributor are safe. */
+	initialize(
+		contributor: PluginEditorRecoveryContributor,
+	): Promise<PluginRecoveryInitialization>;
+	checkpoint(draft: PluginEditorDraft, payloadVersion: number): Promise<void>;
+	storeBlob(blob: Blob): Promise<PluginRecoveryBlob>;
+	readBlob(blob: PluginRecoveryBlob): Promise<Blob>;
+}
+interface PluginPreparedWrite<T> {
+	execute(): Promise<T>;
+}
+
 interface FileUtilsAPI {
 	getExtension(filename: string): string;
 	getBasename(path: string): string;
@@ -1004,6 +1187,16 @@ interface FileUtilsAPI {
 	}): Promise<string | null>;
 	readDirectory(path: string): Promise<PluginDirectoryReadResult>;
 	readText(path: string): Promise<PluginTextFileSnapshot>;
+	prepareTextWrite(
+		path: string,
+		content: string,
+		options: { expectedRevision: string | null; overwrite?: boolean },
+	): PluginPreparedWrite<PluginTextWriteResult>;
+	prepareBinaryWrite(
+		path: string,
+		content: Uint8Array,
+		options: { expectedRevision: string | null; overwrite?: boolean },
+	): PluginPreparedWrite<PluginBinaryWriteResult>;
 	writeText(
 		path: string,
 		content: string,
@@ -1109,12 +1302,6 @@ interface EventsAPI {
 /**
  * Base Plugin API - available to all providers
  */
-interface HostFetchInit {
-	method?: string;
-	headers?: Record<string, string>;
-	body?: string | Uint8Array;
-	signal?: AbortSignal;
-}
 
 interface PluginAPI {
 	/** Open the Phials settings window directly to this plugin's settings page. */
@@ -1139,7 +1326,7 @@ interface PluginAPI {
 	invoke<T>(command: string, args?: Record<string, unknown>): Promise<T>;
 
 	/** Phials-backed streaming HTTP, gated by network.fetch for community Plugins. */
-	hostFetch?: (url: string, init?: HostFetchInit) => Promise<Response>;
+	fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
 
 	/** Modal dialogs */
 	modal: ModalAPI;
