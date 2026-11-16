@@ -4,14 +4,10 @@ import { fileURLToPath } from "node:url";
 import { pluginManifest } from "../src/plugin.manifest";
 import { build } from "vite";
 import { readCandidateFiles } from "./release.logic";
+import { resolvePhialsHome } from "./phials-home.logic";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const args = process.argv.slice(2);
-const homeIndex = args.indexOf("--phials-home");
-if (homeIndex < 0 || !args[homeIndex + 1]) {
-  throw new Error("Usage: npm run dev:install -- --phials-home <directory>");
-}
-const phialsHome = path.resolve(args[homeIndex + 1]!);
+const phialsHome = resolvePhialsHome(process.argv.slice(2));
 const dist = path.join(root, "dist");
 // Always install a fresh successful build; no inventory prerequisite.
 await build({ root });

@@ -59,17 +59,31 @@ Rebuild on source changes:
 npm run dev
 ```
 
-To build and install into an explicit, isolated Phials Home:
+Build and install into your normal Phials installation:
+
+```bash
+npm run dev:install
+```
+
+The installer uses `PHIALS_HOME` if set; otherwise it uses Phials' default home:
+
+- macOS: `~/Library/Application Support/com.phials`
+- Windows: `%LOCALAPPDATA%\\com.phials`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/com.phials` (XDG_DATA_HOME must be absolute)
+
+It builds first, stages files under `plugins/<manifest-id>`, and replaces the
+previous installation with rollback on failure. Re-run it after changes, then
+reload the plugin in Settings → Plugins. No separate build or inventory step is
+needed. Watching alone does not install or hot-reload the plugin.
+
+Optionally install into an isolated home instead:
 
 ```bash
 npm run dev:install -- --phials-home /absolute/path/to/dev-phials-home
 ```
 
-Run Phials with that same home (`PHIALS_HOME=/absolute/path/to/dev-phials-home`).
-The installer builds first, stages files under `plugins/<manifest-id>`, and
-replaces the previous installation with rollback on failure. It does not require
-a pre-existing release inventory. Re-run it after changes, then reload the plugin
-in Settings → Plugins. Watching alone does not install or hot-reload the plugin.
+The flag takes precedence over `PHIALS_HOME`. When using an isolated home, launch
+Phials with that same home (`PHIALS_HOME=/absolute/path/to/dev-phials-home`).
 
 ## Release
 
