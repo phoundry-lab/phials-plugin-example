@@ -31,7 +31,7 @@ to edit or commit. Both production and watch builds generate their own metadata.
   icons in the manifest so Phials can preload other Iconify icons too.
 
 The public Plugin API comes from `@phoundry/phials-plugin-sdk`, pinned to version
-3.0.0. No copied SDK or Phials checkout is needed. Import runtime manifest helpers
+3.1.0. No copied SDK or Phials checkout is needed. Import runtime manifest helpers
 from `@phoundry/phials-plugin-sdk/manifest`; `env.d.ts` includes the public ambient
 types. SDK upgrades are normal dependency updates. Changing API major versions
 also requires migrating the plugin and its manifest.
@@ -39,6 +39,50 @@ also requires migrating the plugin and its manifest.
 Plugins are trusted JavaScript in the Phials renderer, not sandboxed code.
 Privileged operations use the permission-gated `PluginAPI`; declare only the
 permissions your plugin actually needs.
+
+## Read-only Git example
+
+SDK 3.1.0 adds repository status, diffs, history, local branches, and committed
+file reads. The optional, type-checked helper in
+`src/examples/git-inspection.logic.ts` demonstrates every new method. It is not
+registered or bundled by `src/main.ts`, so the starter still needs no privileged
+permissions by default.
+
+To use the helper, declare `permissions: ["filesystem.read"]` in
+`src/plugin.manifest.ts`, then call it from an async command or feature with the
+Plugin API and a repository path on its captured Host:
+
+```ts
+import { inspectGitRepository } from "./examples/git-inspection.logic";
+
+// Inside your async command/feature; api is the Plugin API from onActivate.
+try {
+  const result = await inspectGitRepository(api, repositoryPath);
+  if (!result) api.notify.info("This path is not in a Git repository");
+  else api.notify.success(`${result.status.length} changed files`);
+} catch (error) {
+  api.notify.error(error instanceof Error ? error.message : String(error));
+}
+```
+
+An optional third argument, such as `"README.md"`, reads that file from the newest
+returned commit. Choose a file known to exist there; missing files, non-UTF-8
+content, and NUL-containing content are errors. An unborn branch has no history.
+
+`getInfo` discovers the containing repository, including linked worktrees, and
+reports the real root and upstream ahead/behind counts. Status paths and file
+arguments are repository-relative; file arguments use literal forward-slash
+paths rather than Git pathspecs. `diff` defaults to unstaged tracked-file changes;
+use `{ staged: true }` for index changes. Untracked files appear in `status`, not
+in these patches. These calls are separate queries, not an atomic snapshot.
+
+Git must be installed on the executing Local or Remote Host. Git CLI subprocesses
+have a 15-second timeout and an 8 MiB stdout limit; oversized output is rejected,
+not truncated. History defaults to 50 commits, supports up to 500 per call, and
+allows `skip` up to 1,000,000. All operations are read-only: no staging, commits,
+checkout, fetch, or push is exposed. The manifest's `pluginApiVersion` remains
+`"3.0.0"`; SDK package 3.1.0 is an additive declaration release, not a new Host API
+compatibility version. Use a Phials build that includes these Git operations.
 
 ## CSS
 
